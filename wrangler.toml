@@ -1,5 +1,3 @@
-pages_build_output_dir = "public"
-
 name = "red-accountability-worker"
 main = "src/index.js"
 compatibility_date = "2026-07-27"
@@ -12,3 +10,6 @@ database_id = "89540b2c-3f56-4b82-bf7a-774b50611854"
 [[routes]]
 pattern = "red-api.builtbyvega.com"
 custom_domain = true
+
+[vars]
+VAPID_PUBLIC_KEY = "BHxwL2kPQvRj73DTlByH3nKhuFP5O4zIrB7Ylq8QcWOLLOj3EfUZXKcHHWjLZkakAgUav6DDd_1N8MPgTjVn4tg"

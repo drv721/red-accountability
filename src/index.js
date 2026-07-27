@@ -43,9 +43,79 @@ function withinMinutes(actual, target, tolerance) {
   return Math.min(diff, 1440 - diff) <= tolerance;
 }
 
+// ── VAPID / push ──────────────────────────────────────────────────────────────
+
+function bufToB64url(buf) {
+  const bytes = new Uint8Array(buf instanceof ArrayBuffer ? buf : buf.buffer);
+  let str = '';
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function b64urlToBuf(s) {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+  const str = atob(b64);
+  const buf = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) buf[i] = str.charCodeAt(i);
+  return buf;
+}
+
+function b64urlJson(obj) {
+  const str = JSON.stringify(obj);
+  let b64 = '';
+  for (let i = 0; i < str.length; i++) b64 += String.fromCharCode(str.charCodeAt(i));
+  return btoa(b64).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function vapidHeaders(endpoint, env) {
+  const audience = new URL(endpoint).origin;
+  const exp = Math.floor(Date.now() / 1000) + 43200;
+
+  const header  = b64urlJson({ typ: 'JWT', alg: 'ES256' });
+  const payload = b64urlJson({ aud: audience, exp, sub: 'mailto:vegajunkmail@gmail.com' });
+  const toSign  = `${header}.${payload}`;
+
+  // Build JWK from raw private (32 B) + uncompressed public key (65 B: 0x04 + x + y)
+  const pubBytes = b64urlToBuf(env.VAPID_PUBLIC_KEY);
+  const jwk = {
+    kty: 'EC', crv: 'P-256',
+    d: env.VAPID_PRIVATE_KEY,
+    x: bufToB64url(pubBytes.slice(1, 33)),
+    y: bufToB64url(pubBytes.slice(33, 65)),
+  };
+
+  const key = await crypto.subtle.importKey(
+    'jwk', jwk,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false, ['sign']
+  );
+
+  const sig = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    key,
+    new TextEncoder().encode(toSign)
+  );
+
+  const jwt = `${toSign}.${bufToB64url(sig)}`;
+  return {
+    Authorization: `vapid t=${jwt},k=${env.VAPID_PUBLIC_KEY}`,
+    TTL: '43200',
+  };
+}
+
+async function sendPush(pushSubJson, env) {
+  const sub = typeof pushSubJson === 'string' ? JSON.parse(pushSubJson) : pushSubJson;
+  try {
+    const headers = await vapidHeaders(sub.endpoint, env);
+    const res = await fetch(sub.endpoint, { method: 'POST', headers });
+    return res.ok || res.status === 201;
+  } catch {
+    return false;
+  }
+}
+
 // ── scoring ───────────────────────────────────────────────────────────────────
 
-// Returns { water: [bool,bool,bool], move: [bool,bool], sleep: [bool,bool,bool], mood: [bool] }
 function computeMarks(checkins, user) {
   const waterLogs = checkins.filter(c => c.type === 'water');
   const moveLogs  = checkins.filter(c => c.type === 'move');
@@ -58,20 +128,15 @@ function computeMarks(checkins, user) {
   let sleep = [false, false, false];
   if (sleepLog) {
     const bedOk = user.bed_target && sleepLog.bed_at
-      ? withinMinutes(sleepLog.bed_at, user.bed_target, 30)
-      : false;
+      ? withinMinutes(sleepLog.bed_at, user.bed_target, 30) : false;
     const wakeOk = user.wake_target && sleepLog.wake_at
-      ? withinMinutes(sleepLog.wake_at, user.wake_target, 30)
-      : false;
+      ? withinMinutes(sleepLog.wake_at, user.wake_target, 30) : false;
     const hoursOk = user.sleep_hours_goal != null && sleepLog.hours != null
-      ? sleepLog.hours >= user.sleep_hours_goal
-      : false;
+      ? sleepLog.hours >= user.sleep_hours_goal : false;
     sleep = [bedOk, wakeOk, hoursOk];
   }
 
-  const mood = [!!moodLog];
-
-  return { water, move, sleep, mood };
+  return { water, move, sleep, mood: [!!moodLog] };
 }
 
 function marksToPoints(marks) {
@@ -83,25 +148,15 @@ function marksToPoints(marks) {
   );
 }
 
-// Walk backward from asOfDate counting consecutive green days (6+).
-// If today is not yet green (empty or in progress), start from yesterday —
-// so a single 8am water log doesn't collapse a 21-day streak.
-// Any fully missed day in the walk has pts=0 and immediately breaks the streak.
 function computeStreak(userCheckins, user, asOfDate) {
   const todayPts = marksToPoints(computeMarks(userCheckins[asOfDate] || [], user));
   let date  = todayPts >= 6 ? asOfDate : subtractDays(asOfDate, 1);
   let streak = 0;
-
   for (let i = 0; i < 90; i++) {
     const pts = marksToPoints(computeMarks(userCheckins[date] || [], user));
-    if (pts >= 6) {
-      streak++;
-      date = subtractDays(date, 1);
-    } else {
-      break;
-    }
+    if (pts >= 6) { streak++; date = subtractDays(date, 1); }
+    else { break; }
   }
-
   return streak;
 }
 
@@ -109,9 +164,7 @@ function computeStreak(userCheckins, user, asOfDate) {
 
 async function handleCheckin(request, env, corsHeaders) {
   let body;
-  try {
-    body = await request.json();
-  } catch {
+  try { body = await request.json(); } catch {
     return json({ error: 'Invalid JSON' }, 400, corsHeaders);
   }
 
@@ -136,14 +189,9 @@ async function handleCheckin(request, env, corsHeaders) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     user_id, type, ts_utc, local_date, local_time, tz,
-    qty          ?? null,
-    activity     ?? null,
-    duration_min ?? null,
-    bed_at       ?? null,
-    wake_at      ?? null,
-    hours        ?? null,
-    mood         ?? null,
-    note         ?? null,
+    qty ?? null, activity ?? null, duration_min ?? null,
+    bed_at ?? null, wake_at ?? null, hours ?? null,
+    mood ?? null, note ?? null,
   ).run();
 
   return json({ ok: true, id: result.meta.last_row_id }, 200, corsHeaders);
@@ -159,13 +207,11 @@ async function handleFeed(url, env, corsHeaders) {
       : new Date().toISOString().slice(0, 10);
   }
 
-  // Load all three users in R-E-D order
   const orderExpr = `CASE id WHEN 'ray' THEN 1 WHEN 'evan' THEN 2 WHEN 'daniel' THEN 3 ELSE 4 END`;
   const { results: users } = await env.DB.prepare(
     `SELECT * FROM users ORDER BY ${orderExpr}`
   ).all();
 
-  // Load 90 days of check-ins for all three users in one query
   const startDate = subtractDays(date, 90);
   const { results: allCheckins } = await env.DB.prepare(
     `SELECT * FROM checkins
@@ -173,7 +219,6 @@ async function handleFeed(url, env, corsHeaders) {
      ORDER BY local_date DESC, ts_utc DESC`
   ).bind(startDate, date).all();
 
-  // Group by user → date → rows[]
   const checkinMap = {};
   for (const ck of allCheckins) {
     if (!checkinMap[ck.user_id]) checkinMap[ck.user_id] = {};
@@ -187,19 +232,12 @@ async function handleFeed(url, env, corsHeaders) {
     const marks         = computeMarks(todayCheckins, user);
     const points        = marksToPoints(marks);
     const streak        = computeStreak(userCheckins, user, date);
-
-    const weightLoggedToday = (userCheckins[date] || []).some(c => c.type === 'weight');
+    const weightLoggedToday = todayCheckins.some(c => c.type === 'weight');
 
     return {
-      id:                  user.id,
-      name:                user.name,
-      tz:                  user.tz,
-      goal_type:           user.goal_type,
-      goal_text:           user.goal_text,
-      streak,
-      points,
-      total:               9,
-      marks,
+      id: user.id, name: user.name, tz: user.tz,
+      goal_type: user.goal_type, goal_text: user.goal_text,
+      streak, points, total: 9, marks,
       weight_logged_today: weightLoggedToday,
     };
   });
@@ -215,6 +253,21 @@ async function handleMe(url, env, corsHeaders) {
   return json(user, 200, corsHeaders);
 }
 
+async function handleSubscribe(request, env, corsHeaders) {
+  let body;
+  try { body = await request.json(); } catch {
+    return json({ error: 'Invalid JSON' }, 400, corsHeaders);
+  }
+  const { user_id, subscription } = body;
+  if (!user_id || !subscription) return json({ error: 'Missing fields' }, 400, corsHeaders);
+
+  await env.DB.prepare('UPDATE users SET push_sub = ? WHERE id = ?')
+    .bind(JSON.stringify(subscription), user_id)
+    .run();
+
+  return json({ ok: true }, 200, corsHeaders);
+}
+
 async function handleNudge(request, env, corsHeaders) {
   let body;
   try { body = await request.json(); } catch {
@@ -224,10 +277,17 @@ async function handleNudge(request, env, corsHeaders) {
   if (!from || !to || !kind) return json({ error: 'Missing fields' }, 400, corsHeaders);
   const validKinds = ['proud', 'lets_go', 'checking_in', 'nice_work', 'get_up'];
   if (!validKinds.includes(kind)) return json({ error: 'Invalid kind' }, 400, corsHeaders);
+
   await env.DB.prepare(
     `INSERT INTO nudges (from_user, to_user, kind, ts_utc) VALUES (?, ?, ?, ?)`
   ).bind(from, to, kind, new Date().toISOString()).run();
-  // Push delivery wired in step 7
+
+  // Deliver push to recipient
+  const target = await env.DB.prepare('SELECT push_sub FROM users WHERE id = ?').bind(to).first();
+  if (target?.push_sub) {
+    await sendPush(target.push_sub, env);
+  }
+
   return json({ ok: true }, 200, corsHeaders);
 }
 
@@ -244,20 +304,15 @@ async function handleHistory(url, env, corsHeaders) {
   const startDate = subtractDays(endDate, days);
 
   const { results: rows } = await env.DB.prepare(
-    `SELECT * FROM checkins
-     WHERE user_id = ? AND local_date >= ?
-     ORDER BY ts_utc DESC`
+    `SELECT * FROM checkins WHERE user_id = ? AND local_date >= ? ORDER BY ts_utc DESC`
   ).bind(user_id, startDate).all();
 
-  // Group by date
   const byDate = {};
   for (const r of rows) {
     if (!byDate[r.local_date]) byDate[r.local_date] = [];
     byDate[r.local_date].push(r);
   }
 
-  // Daily summaries — every date in the window, including days with no check-ins.
-  // Missed days get zeroes so they occupy space in charts rather than disappearing.
   const daily = [];
   let cur = startDate;
   while (cur <= endDate) {
@@ -273,24 +328,18 @@ async function handleHistory(url, env, corsHeaders) {
     cur = addDay(cur);
   }
 
-  // Weight logs ascending (weekly weigh-ins)
   const weeklyWeight = rows
     .filter(r => r.type === 'weight' && r.qty != null)
     .map(r => ({ date: r.local_date, lbs: r.qty }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return json({
-    user_id,
-    tz:           user.tz,
-    goal: {
-      sleep_hours: user.sleep_hours_goal,
-      water:       user.water_goal,
-    },
+    user_id, tz: user.tz,
+    goal: { sleep_hours: user.sleep_hours_goal, water: user.water_goal },
     streak:       computeStreak(byDate, user, endDate),
     total_points: daily.reduce((s, d) => s + d.points, 0),
-    daily,
-    weekly_weight: weeklyWeight,
-    log:           rows,   // already descending by ts_utc
+    daily, weekly_weight: weeklyWeight,
+    log: rows,
   }, 200, corsHeaders);
 }
 
@@ -308,21 +357,12 @@ export default {
     const path = url.pathname;
 
     try {
-      if (path === '/api/checkin' && request.method === 'POST') {
-        return handleCheckin(request, env, corsHeaders);
-      }
-      if (path === '/api/feed' && request.method === 'GET') {
-        return handleFeed(url, env, corsHeaders);
-      }
-      if (path === '/api/me' && request.method === 'GET') {
-        return handleMe(url, env, corsHeaders);
-      }
-      if (path === '/api/nudge' && request.method === 'POST') {
-        return handleNudge(request, env, corsHeaders);
-      }
-      if (path === '/api/history' && request.method === 'GET') {
-        return handleHistory(url, env, corsHeaders);
-      }
+      if (path === '/api/checkin'   && request.method === 'POST') return handleCheckin(request, env, corsHeaders);
+      if (path === '/api/feed'      && request.method === 'GET')  return handleFeed(url, env, corsHeaders);
+      if (path === '/api/me'        && request.method === 'GET')  return handleMe(url, env, corsHeaders);
+      if (path === '/api/subscribe' && request.method === 'POST') return handleSubscribe(request, env, corsHeaders);
+      if (path === '/api/nudge'     && request.method === 'POST') return handleNudge(request, env, corsHeaders);
+      if (path === '/api/history'   && request.method === 'GET')  return handleHistory(url, env, corsHeaders);
       return json({ error: 'Not found' }, 404, corsHeaders);
     } catch (e) {
       console.error(e);

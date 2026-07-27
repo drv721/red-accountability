@@ -462,6 +462,8 @@ const API_BASE = location.hostname === 'localhost' || location.hostname === '127
   ? 'http://localhost:8787'
   : 'https://red-api.builtbyvega.com';
 
+const VAPID_PUBLIC_KEY = 'BHxwL2kPQvRj73DTlByH3nKhuFP5O4zIrB7Ylq8QcWOLLOj3EfUZXKcHHWjLZkakAgUav6DDd_1N8MPgTjVn4tg';
+
 // ── food library ──────────────────────────────────────────────────────────────
 const FOOD = [
   'Apple with peanut butter','Banana with peanut butter','Hard-boiled eggs',
@@ -1127,6 +1129,57 @@ function setTab(name) {
   }
 }
 
+// ── push notifications ────────────────────────────────────────────────────────
+function urlB64ToUint8(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return null;
+  try {
+    return await navigator.serviceWorker.register('/sw.js');
+  } catch { return null; }
+}
+
+async function subscribePush(uid) {
+  if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8(VAPID_PUBLIC_KEY),
+      });
+    }
+
+    // Store userId in cache so SW can fetch /api/feed on push
+    const cache = await caches.open('red-state');
+    await cache.put('/sw-user', new Response(uid));
+
+    await fetch(`${API_BASE}/api/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: uid, subscription: sub.toJSON() }),
+    });
+  } catch (e) {
+    console.warn('Push subscription failed:', e);
+  }
+}
+
+async function requestPushPermission(uid) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    await subscribePush(uid);
+  } else if (Notification.permission === 'default') {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') await subscribePush(uid);
+  }
+}
+
 // ── first run ─────────────────────────────────────────────────────────────────
 function selectUser(id) {
   userId = id;
@@ -1162,8 +1215,10 @@ function showApp() {
   setTab('crew');
   renderDatestamp();
   Promise.all([loadFeed(), loadMe()]);
-  // Refresh datestamp every minute
   setInterval(renderDatestamp, 60000);
+
+  // Register SW and subscribe to push (no-op if already subscribed)
+  registerSW().then(() => requestPushPermission(userId));
 }
 
 if (userId) {
