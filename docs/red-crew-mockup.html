@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R.E.D. — Crew screen mockup v5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#002D72;
+    --navy-deep:#001B45;
+    --red:#D32F2F;
+    --red-deep:#B3261E;
+    --red-bright:#FF4A3D;
+    --peri:#BAC8F2;
+    --white:#ffffff;
+    --ink:#0d1b33;
+    --muted:#6b7688;
+    --nav-h:76px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#e9ecf2;
+    font-family:Inter,system-ui,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    padding:40px 16px 64px;gap:28px;
+  }
+
+  .caption{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:#5a6478;text-align:center;line-height:1.9;
+  }
+  .caption b{color:var(--navy);font-weight:500}
+
+  /* ---- phone frame ---- */
+  .phone{
+    width:390px;height:820px;border-radius:44px;background:var(--navy-deep);
+    position:relative;overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,27,69,.28), 0 0 0 10px #11151c, 0 0 0 12px #2a2f38;
+    flex-shrink:0;
+  }
+  .notch{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);
+    width:112px;height:30px;border-radius:16px;background:#11151c;z-index:20;
+  }
+
+  .screen{position:absolute;inset:0 0 var(--nav-h) 0;display:flex;flex-direction:column}
+  .head{flex-shrink:0;padding:62px 22px 12px}
+  .body{flex:1;overflow-y:auto;padding:0 22px 28px}
+
+  /* ---- header ---- */
+  .wordmark{
+    font-weight:700;font-size:18px;letter-spacing:.22em;color:var(--white);
+  }
+  .wordmark span{color:var(--red-bright)}
+  .datestamp{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.09em;
+    color:rgba(255,255,255,.5);margin-top:7px;
+  }
+
+  /* ---- nudge stack ---- */
+  .nudges{margin:18px 0 2px;display:flex;flex-direction:column;gap:8px}
+  .nudge{
+    display:flex;align-items:center;gap:11px;
+    padding:13px 15px;border-radius:13px;
+    background:var(--peri);
+    border:1px solid rgba(0,45,114,.16);
+  }
+  .nudge-dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0;
+    box-shadow:0 0 0 4px rgba(211,47,47,.20)}
+  .nudge-text{font-size:14px;font-weight:400;color:#20345c;line-height:1.35}
+  .nudge-text b{font-weight:600;color:var(--navy)}
+  .nudge-time{
+    margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:#5f6b85;flex-shrink:0;
+  }
+
+  /* ---- person cards ---- */
+  .card{
+    background:var(--white);border-radius:20px;padding:21px 21px 19px;
+    margin-top:13px;
+  }
+  .card-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:3px}
+  .name{font-weight:600;font-size:38px;line-height:1;color:var(--navy);letter-spacing:-.025em}
+  .streak{text-align:right;flex-shrink:0}
+  .streak-num{font-weight:700;font-size:25px;color:var(--red);line-height:1;letter-spacing:-.02em}
+  .streak-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.15em;
+    color:#5f6b85;text-transform:uppercase;margin-top:5px}
+  .goal{font-size:12.5px;font-weight:300;color:#5f6b85;margin-bottom:19px}
+
+  /* nine marks, grouped 3-2-3-1 */
+  .marks{display:flex;align-items:flex-end;gap:16px}
+  .group{display:flex;flex-direction:column;gap:8px}
+  .bars{display:flex;gap:5px}
+  .bar{width:7px;height:22px;border-radius:3px;border:1.5px solid rgba(0,45,114,.26);background:transparent}
+  .bar.on{background:var(--red);border-color:var(--red)}
+  .glbl{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.13em;
+    color:#939db0;text-transform:uppercase}
+  .score{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;
+    color:#5f6b85;align-self:flex-end;padding-bottom:2px}
+  .score b{color:var(--navy);font-weight:500}
+
+  /* ---- food card ---- */
+  .food{
+    margin-top:20px;padding:16px 19px;border-radius:15px;
+    border:1px dashed rgba(255,255,255,.26);
+  }
+  .food-lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.17em;
+    text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px}
+  .food-item{font-size:17px;font-weight:300;color:rgba(255,255,255,.94)}
+
+  /* ---- bottom nav ---- */
+  .nav{
+    position:absolute;bottom:0;left:0;right:0;height:var(--nav-h);
+    background:rgba(0,15,40,.97);border-top:1px solid rgba(255,255,255,.11);
+    display:flex;align-items:flex-start;padding-top:14px;
+  }
+  .nav a{
+    flex:1;text-align:center;text-decoration:none;
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:rgba(255,255,255,.45);
+  }
+  .nav a.on{color:var(--red-bright)}
+  .nav .tick{display:block;width:16px;height:2px;margin:0 auto 9px;background:transparent;border-radius:2px}
+  .nav a.on .tick{background:var(--red-bright)}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+
+  <div class="screen">
+    <div class="head">
+      <div class="wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+      <div class="datestamp">MON · JUL 27 · 2:14 PM CDT</div>
+    </div>
+
+    <div class="body">
+
+      <div class="nudges">
+        <div class="nudge">
+          <span class="nudge-dot"></span>
+          <span class="nudge-text"><b>Ray</b> — proud of you</span>
+          <span class="nudge-time">9:02a</span>
+        </div>
+        <div class="nudge">
+          <span class="nudge-dot"></span>
+          <span class="nudge-text"><b>Evan</b> — get up, old man</span>
+          <span class="nudge-time">7:41a</span>
+        </div>
+      </div>
+
+      <!-- RAY -->
+      <div class="card">
+        <div class="card-top">
+          <div class="name">Ray</div>
+          <div class="streak">
+            <div class="streak-num">12</div>
+            <div class="streak-lbl">Day streak</div>
+          </div>
+        </div>
+        <div class="goal">Lose 25 lb fat · gain 15 lb muscle</div>
+        <div class="marks">
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i><i class="bar on"></i></div>
+            <div class="glbl">Water</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i></div>
+            <div class="glbl">Move</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i><i class="bar"></i></div>
+            <div class="glbl">Sleep</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i></div>
+            <div class="glbl">Mood</div>
+          </div>
+          <div class="score"><b>8</b>/9</div>
+        </div>
+      </div>
+
+      <!-- EVAN -->
+      <div class="card">
+        <div class="card-top">
+          <div class="name">Evan</div>
+          <div class="streak">
+            <div class="streak-num">5</div>
+            <div class="streak-lbl">Day streak</div>
+          </div>
+        </div>
+        <div class="goal">Show up every day</div>
+        <div class="marks">
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i><i class="bar"></i></div>
+            <div class="glbl">Water</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i></div>
+            <div class="glbl">Move</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar"></i><i class="bar"></i></div>
+            <div class="glbl">Sleep</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar"></i></div>
+            <div class="glbl">Mood</div>
+          </div>
+          <div class="score"><b>5</b>/9</div>
+        </div>
+      </div>
+
+      <!-- DANIEL -->
+      <div class="card">
+        <div class="card-top">
+          <div class="name">Daniel</div>
+          <div class="streak">
+            <div class="streak-num">21</div>
+            <div class="streak-lbl">Day streak</div>
+          </div>
+        </div>
+        <div class="goal">Cut the belly fat · tone up</div>
+        <div class="marks">
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i><i class="bar on"></i></div>
+            <div class="glbl">Water</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i></div>
+            <div class="glbl">Move</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i><i class="bar on"></i><i class="bar on"></i></div>
+            <div class="glbl">Sleep</div>
+          </div>
+          <div class="group">
+            <div class="bars"><i class="bar on"></i></div>
+            <div class="glbl">Mood</div>
+          </div>
+          <div class="score"><b>9</b>/9</div>
+        </div>
+      </div>
+
+      <div class="food">
+        <div class="food-lbl">Easy protein today</div>
+        <div class="food-item">Apple with peanut butter</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="nav">
+    <a class="on" href="#"><span class="tick"></span>Crew</a>
+    <a href="#"><span class="tick"></span>Log</a>
+    <a href="#"><span class="tick"></span>Progress</a>
+    <a href="#"><span class="tick"></span>Me</a>
+  </div>
+</div>
+
+<div class="caption">
+  Crew screen · v5 · white cards · periwinkle message bubbles<br>
+  <b>Periwinkle is used for one thing only:</b> messages from the other two.<br>
+  Red is accent only — marks, streak, periods, active tab
+</div>
+
+</body>
+</html>
