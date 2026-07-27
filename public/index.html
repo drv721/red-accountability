@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#001B45">
+<title>R.E.D.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:       #002D72;
+  --navy-deep:  #001B45;
+  --white:      #ffffff;
+  --peri:       #BAC8F2;
+  --red:        #D32F2F;
+  --red-bright: #FF4A3D;
+  --ink:        #20345c;
+  --muted:      #5f6b85;
+  --mark-off:   rgba(0,45,114,.26);
+  --nav-h:      80px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  overflow: hidden; height: 100%;
+  background: var(--navy-deep);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── layout ── */
+#first-run {
+  position: fixed; inset: 0;
+  background: var(--navy-deep);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px;
+}
+#app {
+  position: fixed;
+  top: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  display: none;
+}
+.tab {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+}
+.tab.active { display: flex; }
+.tab-head { flex-shrink: 0; padding: 62px 22px 12px; }
+.tab-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 22px 28px; }
+
+/* ── wordmark ── */
+.wordmark { font-weight: 700; font-size: 18px; letter-spacing: .22em; color: var(--white); }
+.wordmark span { color: var(--red-bright); }
+.datestamp {
+  font-size: 12px; font-weight: 500; letter-spacing: .03em;
+  color: rgba(255,255,255,.72); margin-top: 7px;
+}
+
+/* ── nudge bubbles ── */
+.nudges { margin: 18px 0 2px; display: flex; flex-direction: column; gap: 8px; }
+.nudge {
+  display: flex; align-items: center; gap: 11px;
+  padding: 13px 15px; border-radius: 13px;
+  background: var(--peri); border: 1px solid rgba(0,45,114,.16);
+  animation: settle .3s cubic-bezier(.32,.72,0,1);
+}
+.nudge-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red); flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(211,47,47,.20);
+}
+.nudge-text { font-size: 14px; font-weight: 400; color: var(--ink); line-height: 1.35; flex: 1; }
+.nudge-text b { font-weight: 600; color: var(--navy); }
+.nudge-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--muted); flex-shrink: 0;
+}
+
+/* ── person cards ── */
+.card {
+  background: var(--white); border-radius: 20px;
+  padding: 21px 21px 19px; margin-top: 13px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.card.own { cursor: default; }
+.card-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 3px; }
+.name { font-weight: 600; font-size: 38px; line-height: 1; color: var(--navy); letter-spacing: -.025em; }
+.streak { text-align: right; flex-shrink: 0; }
+.streak-num { font-weight: 700; font-size: 25px; color: var(--red); line-height: 1; letter-spacing: -.02em; }
+.streak-lbl {
+  font-size: 12px; font-weight: 600; letter-spacing: .03em;
+  color: var(--muted); margin-top: 5px;
+}
+.goal { font-size: 12.5px; font-weight: 300; color: var(--muted); margin-bottom: 19px; }
+
+/* ── nine marks ── */
+.marks { display: flex; align-items: flex-end; gap: 16px; }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.bars { display: flex; gap: 5px; }
+.bar {
+  width: 7px; height: 22px; border-radius: 3px;
+  border: 1.5px solid var(--mark-off); background: transparent;
+  transition: background .15s ease, border-color .15s ease;
+}
+.bar.on { background: var(--red); border-color: var(--red); }
+.glbl {
+  font-size: 12px; font-weight: 600; letter-spacing: .03em; color: var(--muted);
+}
+.score {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--muted); align-self: flex-end; padding-bottom: 2px;
+}
+.score b { color: var(--navy); font-weight: 500; }
+
+/* ── food card ── */
+.food {
+  margin-top: 20px; padding: 16px 19px; border-radius: 15px;
+  border: 1px dashed rgba(255,255,255,.26);
+}
+.food-lbl {
+  font-size: 12px; font-weight: 600; letter-spacing: .03em;
+  color: rgba(255,255,255,.72); margin-bottom: 8px;
+}
+.food-item { font-size: 17px; font-weight: 300; color: rgba(255,255,255,.94); }
+
+/* ── bottom nav ── */
+#nav {
+  position: fixed; bottom: 0;
+  left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(0,15,40,.97); border-top: 1px solid rgba(255,255,255,.11);
+  display: none; align-items: stretch;
+}
+.nav-btn {
+  flex: 1; cursor: pointer; background: none; border: none;
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: 14px;
+  font-family: Inter, system-ui, sans-serif; font-size: 12px;
+  font-weight: 600; letter-spacing: .04em;
+  color: rgba(255,255,255,.62);
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-btn.active { color: var(--red-bright); }
+.nav-tick { display: block; width: 16px; height: 2px; margin: 0 auto 9px; background: transparent; border-radius: 2px; }
+.nav-btn.active .nav-tick { background: var(--red-bright); }
+
+/* ── log tab ── */
+.log-section-head {
+  font-size: 12px; font-weight: 600; letter-spacing: .03em;
+  color: rgba(255,255,255,.72); margin: 24px 0 12px;
+}
+.log-section-head:first-child { margin-top: 16px; }
+.log-card {
+  background: rgba(255,255,255,.06); border-radius: 20px;
+  padding: 20px; margin-bottom: 4px;
+}
+
+/* water */
+.water-btn {
+  width: 100%; padding: 26px;
+  border-radius: 18px; background: rgba(255,255,255,.07);
+  border: 1.5px solid rgba(255,255,255,.14);
+  color: var(--white); font-size: 20px; font-weight: 600;
+  font-family: inherit; cursor: pointer; letter-spacing: -.01em;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .1s;
+}
+.water-btn:active { background: rgba(255,255,255,.14); }
+
+/* chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.chip {
+  padding: 8px 18px; border-radius: 100px; min-height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid rgba(255,255,255,.18);
+  background: transparent; color: rgba(255,255,255,.65);
+  font-size: 14px; font-family: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all .12s;
+}
+.chip.sel { background: var(--red-bright); border-color: var(--red-bright); color: #fff; }
+
+/* activity chips — wider for labels */
+.chips.activity .chip { padding: 8px 14px; }
+
+/* log button */
+.log-btn {
+  width: 100%; padding: 18px; border-radius: 14px;
+  background: var(--red-bright); border: none;
+  color: #fff; font-size: 17px; font-weight: 600;
+  font-family: inherit; cursor: pointer; margin-top: 16px;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .1s;
+}
+.log-btn:active { opacity: .85; }
+.log-btn:disabled { opacity: .4; cursor: default; }
+
+/* time inputs */
+.time-row { display: flex; gap: 12px; }
+.time-field { flex: 1; }
+.time-label { font-size: 12px; font-weight: 600; letter-spacing: .03em; color: rgba(255,255,255,.72); margin-bottom: 6px; }
+input[type="time"] {
+  width: 100%; padding: 12px 14px; border-radius: 12px;
+  background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.14);
+  color: #fff; font-size: 16px; font-family: 'JetBrains Mono', monospace;
+  outline: none; -webkit-appearance: none;
+}
+.hours-display {
+  text-align: center; font-size: 13px; color: rgba(255,255,255,.65);
+  margin: 10px 0 2px;
+}
+
+/* mood grid */
+.mood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mood-chip {
+  padding: 14px 10px; border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,.16);
+  background: transparent; color: rgba(255,255,255,.75);
+  font-size: 14px; font-family: inherit; cursor: pointer; text-align: center;
+  -webkit-tap-highlight-color: transparent; transition: all .12s;
+}
+.mood-chip.sel { background: var(--navy); border-color: var(--navy); color: #fff; }
+textarea.mood-note {
+  width: 100%; padding: 12px 14px; border-radius: 12px; margin-top: 10px;
+  background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.14);
+  color: #fff; font-size: 16px; font-family: inherit;
+  resize: none; outline: none; min-height: 72px;
+}
+textarea.mood-note::placeholder { color: rgba(255,255,255,.3); }
+
+/* weight */
+.weight-row { display: flex; align-items: center; gap: 10px; }
+input.weight-in {
+  flex: 1; padding: 14px; border-radius: 12px;
+  background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.14);
+  color: #fff; font-size: 24px; font-family: 'JetBrains Mono', monospace;
+  text-align: center; outline: none; -webkit-appearance: none;
+}
+.weight-unit { color: rgba(255,255,255,.65); font-size: 16px; }
+
+/* ── first run ── */
+.fr-wordmark { font-weight: 700; font-size: 24px; letter-spacing: .22em; color: var(--white); margin-bottom: 10px; }
+.fr-wordmark span { color: var(--red-bright); }
+.fr-sub { font-size: 14px; font-weight: 300; color: rgba(255,255,255,.72); margin-bottom: 48px; text-align: center; }
+.fr-cards { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 340px; }
+.fr-card {
+  background: var(--white); border-radius: 20px; padding: 28px 24px;
+  font-weight: 600; font-size: 38px; letter-spacing: -.025em; color: var(--navy);
+  border: none; text-align: left; cursor: pointer; font-family: inherit;
+  -webkit-tap-highlight-color: transparent; transition: transform .1s;
+}
+.fr-card:active { transform: scale(.97); }
+
+/* ── nudge sheet ── */
+#nudge-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 50; display: none; opacity: 0;
+  transition: opacity .2s;
+}
+#nudge-overlay.open { display: block; opacity: 1; }
+#nudge-sheet {
+  position: fixed; bottom: 0;
+  left: 50%; transform: translateX(-50%) translateY(100%);
+  width: 100%; max-width: 480px;
+  background: var(--navy); border-radius: 24px 24px 0 0;
+  padding: 24px 20px calc(40px + env(safe-area-inset-bottom, 0px)); z-index: 51;
+  transition: transform .28s cubic-bezier(.32,.72,0,1);
+}
+#nudge-overlay.open #nudge-sheet { transform: translateX(-50%) translateY(0); }
+.sheet-title {
+  font-size: 12px; font-weight: 600; letter-spacing: .03em;
+  color: rgba(255,255,255,.72); text-align: center; margin-bottom: 20px;
+}
+.nudge-opt {
+  width: 100%; padding: 16px 18px; margin-bottom: 10px;
+  border-radius: 14px; background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.12);
+  color: var(--white); font-size: 16px; font-family: inherit;
+  cursor: pointer; text-align: left;
+  -webkit-tap-highlight-color: transparent; transition: background .1s;
+}
+.nudge-opt:active { background: rgba(255,255,255,.16); }
+.sheet-cancel {
+  width: 100%; padding: 16px; margin-top: 4px;
+  border-radius: 14px; background: transparent;
+  border: 1.5px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.65); font-size: 16px; font-family: inherit; cursor: pointer;
+}
+
+/* ── me tab ── */
+.me-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.me-label { font-size: 14px; color: rgba(255,255,255,.72); }
+.me-value { font-size: 14px; color: var(--white); font-weight: 500; }
+.me-section-head {
+  font-size: 12px; font-weight: 600; letter-spacing: .03em;
+  color: rgba(255,255,255,.72); margin: 28px 0 4px;
+}
+
+/* ── flash ── */
+.flash {
+  position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,45,114,.95); color: #fff; padding: 12px 24px;
+  border-radius: 100px; font-size: 14px; font-weight: 500;
+  z-index: 200; white-space: nowrap; pointer-events: none;
+  animation: fadeout 1.8s forwards .3s;
+}
+@keyframes fadeout { to { opacity: 0; transform: translate(-50%, -6px); } }
+@keyframes settle {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── loading state ── */
+.loading { color: rgba(255,255,255,.6); font-size: 14px; padding: 40px 0; text-align: center; }
+
+/* ── progress tab ── */
+.user-switcher { display: flex; gap: 8px; margin: 16px 0 20px; }
+.switcher-btn {
+  flex: 1; padding: 10px 6px; border-radius: 10px; min-height: 44px;
+  border: 1.5px solid rgba(255,255,255,.14);
+  background: transparent; color: rgba(255,255,255,.72);
+  font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: all .12s;
+}
+.switcher-btn.active {
+  background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3);
+  color: var(--white);
+}
+
+.progress-stats { display: flex; gap: 12px; margin-bottom: 24px; }
+.pstat {
+  flex: 1; background: rgba(255,255,255,.05); border-radius: 14px; padding: 16px 14px;
+}
+.pstat-num {
+  display: block; font-weight: 700; font-size: 28px; color: var(--red-bright);
+  letter-spacing: -.02em; line-height: 1;
+}
+.pstat-lbl {
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: .03em;
+  color: rgba(255,255,255,.72); margin-top: 6px;
+}
+
+.chart-section { margin-bottom: 28px; }
+.chart-head {
+  display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;
+}
+.chart-title {
+  font-size: 12px; font-weight: 600; letter-spacing: .03em; color: rgba(255,255,255,.72);
+}
+.chart-sub { font-size: 12px; color: rgba(255,255,255,.55); }
+.chart-wrap {
+  background: rgba(255,255,255,.04); border-radius: 12px; padding: 12px 10px 8px;
+  overflow: hidden;
+}
+.chart-empty { color: rgba(255,255,255,.6); font-size: 13px; text-align: center; padding: 28px 0; }
+
+.history-section { margin-top: 28px; }
+.h-entry { padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.h-ts {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: rgba(255,255,255,.6); letter-spacing: .06em; margin-bottom: 3px;
+}
+.h-detail { font-size: 14px; color: rgba(255,255,255,.78); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bar, .nudge-opt, .chip, .mood-chip { transition: none; }
+  #nudge-sheet, #nudge-overlay { transition: none; }
+  .nudge { animation: none; }
+  .flash { animation: none; opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── First run ── -->
+<div id="first-run">
+  <div class="fr-wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+  <p class="fr-sub">Who are you?</p>
+  <div class="fr-cards">
+    <button class="fr-card" onclick="selectUser('ray')">Ray</button>
+    <button class="fr-card" onclick="selectUser('evan')">Evan</button>
+    <button class="fr-card" onclick="selectUser('daniel')">Daniel</button>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+
+  <!-- Crew -->
+  <div id="tab-crew" class="tab active">
+    <div class="tab-head">
+      <div class="wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+      <div id="datestamp" class="datestamp"></div>
+    </div>
+    <div id="crew-body" class="tab-body"><div class="loading">Loading…</div></div>
+  </div>
+
+  <!-- Log -->
+  <div id="tab-log" class="tab">
+    <div class="tab-head">
+      <div class="wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+      <div class="datestamp">Log</div>
+    </div>
+    <div id="log-body" class="tab-body"></div>
+  </div>
+
+  <!-- Progress -->
+  <div id="tab-progress" class="tab">
+    <div class="tab-head">
+      <div class="wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+      <div class="datestamp">Progress</div>
+    </div>
+    <div id="progress-body" class="tab-body"></div>
+  </div>
+
+  <!-- Me -->
+  <div id="tab-me" class="tab">
+    <div class="tab-head">
+      <div class="wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+      <div class="datestamp">Me</div>
+    </div>
+    <div id="me-body" class="tab-body"></div>
+  </div>
+
+</div>
+
+<!-- ── Bottom nav ── -->
+<nav id="nav">
+  <button class="nav-btn active" onclick="setTab('crew')"><span class="nav-tick"></span>Crew</button>
+  <button class="nav-btn"        onclick="setTab('log')"><span class="nav-tick"></span>Log</button>
+  <button class="nav-btn"        onclick="setTab('progress')"><span class="nav-tick"></span>Progress</button>
+  <button class="nav-btn"        onclick="setTab('me')"><span class="nav-tick"></span>Me</button>
+</nav>
+
+<!-- ── Nudge sheet ── -->
+<div id="nudge-overlay" onclick="if(event.target===this)closeNudgeSheet()">
+  <div id="nudge-sheet">
+    <div id="sheet-title" class="sheet-title"></div>
+    <div id="sheet-opts"></div>
+    <button class="sheet-cancel" onclick="closeNudgeSheet()">Cancel</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── config ────────────────────────────────────────────────────────────────────
+const API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  ? 'http://localhost:8787'
+  : 'https://red-api.builtbyvega.com';
+
+// ── food library ──────────────────────────────────────────────────────────────
+const FOOD = [
+  'Apple with peanut butter','Banana with peanut butter','Hard-boiled eggs',
+  'String cheese','Unsalted almonds','Unsalted peanuts',
+  'Plain Greek yogurt with honey','Plain Greek yogurt with berries',
+  'Grapes','Clementines','Strawberries','Blueberries',
+  'Baby carrots with hummus','Celery with peanut butter',
+  'Cucumber slices','Bell pepper strips','Sugar snap peas',
+  'Cherry tomatoes','Watermelon','Pineapple',
+  'Deli turkey rolled around a cheese stick','Avocado toast',
+  'Oatmeal with peanut butter stirred in','Banana and a glass of milk',
+  'Chocolate milk after a workout',
+  'Rotisserie chicken with frozen broccoli','Baked chicken thighs with rice',
+  'Burgers with roasted potatoes','Taco night with ground turkey',
+  'Spaghetti with a leaner meat sauce',
+  'Scrambled eggs with turkey and toast','Frozen salmon fillet','Pork loin',
+];
+
+const NUDGE_LABELS = {
+  proud:       'Proud of you',
+  lets_go:     "Let's go today",
+  checking_in: 'Checking in on you',
+  nice_work:   'Nice work',
+  get_up:      'Get up, old man',
+};
+
+// ── state ─────────────────────────────────────────────────────────────────────
+let userId   = localStorage.getItem('red_user_id');
+let userTz   = localStorage.getItem('red_tz');
+let feedData = null;
+let meData   = null;
+let nudgeTarget = null;
+
+// progress tab state
+let progressUser = null;
+let historyData  = null;
+
+// log form state
+let logOz       = 16;
+let logActivity = null;
+let logDuration = null;
+let logMood     = null;
+
+// ── date / time helpers ───────────────────────────────────────────────────────
+function getTz() {
+  return userTz || Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+function localDate(tz) {
+  return new Date().toLocaleDateString('en-CA', { timeZone: tz });
+}
+
+function localTime(tz) {
+  return new Date().toLocaleTimeString('en-US', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
+  }).replace(/^24:/, '00:');
+}
+
+function formatDatestamp(tz) {
+  const now = new Date();
+  const DAYS   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  // Parse local time components via locale string
+  const loc = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+  const h = loc.getHours(), m = loc.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  const tzAbbr = now.toLocaleTimeString('en-US', { timeZone: tz, timeZoneName: 'short' }).split(' ').slice(-1)[0];
+  return `${DAYS[loc.getDay()]} · ${MONTHS[loc.getMonth()]} ${loc.getDate()} · ${h12}:${String(m).padStart(2,'0')} ${ampm} ${tzAbbr}`;
+}
+
+function isSunday(tz) {
+  const loc = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
+  return loc.getDay() === 0;
+}
+
+function todayFood() {
+  const days = Math.floor((Date.now() - new Date('2024-01-01').getTime()) / 86400000);
+  return FOOD[days % FOOD.length];
+}
+
+function formatNudgeTime(tsUtc) {
+  const now = new Date(), ts = new Date(tsUtc);
+  const diffH = (now - ts) / 3600000;
+  if (diffH < 1) return 'just now';
+  const loc = new Date(ts.toLocaleString('en-US', { timeZone: getTz() }));
+  const h = loc.getHours(), m = loc.getMinutes();
+  const ampm = h >= 12 ? 'p' : 'a';
+  const h12  = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')}${ampm}`;
+}
+
+function sleepHours(bedAt, wakeAt) {
+  if (!bedAt || !wakeAt) return null;
+  const [bh, bm] = bedAt.split(':').map(Number);
+  const [wh, wm] = wakeAt.split(':').map(Number);
+  let mins = (wh * 60 + wm) - (bh * 60 + bm);
+  if (mins <= 0) mins += 1440;
+  return +(mins / 60).toFixed(1);
+}
+
+// ── api ───────────────────────────────────────────────────────────────────────
+async function loadFeed() {
+  const tz   = getTz();
+  const date = localDate(tz);
+  const res  = await fetch(`${API_BASE}/api/feed?date=${date}&tz=${encodeURIComponent(tz)}`);
+  feedData = await res.json();
+  const me = feedData.users.find(u => u.id === userId);
+  if (me?.tz) { userTz = me.tz; localStorage.setItem('red_tz', userTz); }
+  renderCrew();
+  renderDatestamp();
+}
+
+async function loadMe() {
+  const res = await fetch(`${API_BASE}/api/me?user=${userId}`);
+  meData = await res.json();
+  renderLog();
+  renderMe();
+}
+
+async function postCheckin(payload) {
+  const res = await fetch(`${API_BASE}/api/checkin`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+async function postNudge(to, kind) {
+  const res = await fetch(`${API_BASE}/api/nudge`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: userId, to, kind }),
+  });
+  return res.json();
+}
+
+function buildCheckin(type, extras = {}) {
+  const tz = getTz();
+  return {
+    user_id: userId, type,
+    ts_utc:     new Date().toISOString(),
+    local_date: localDate(tz),
+    local_time: localTime(tz),
+    tz,
+    ...extras,
+  };
+}
+
+// ── render: datestamp ─────────────────────────────────────────────────────────
+function renderDatestamp() {
+  const el = document.getElementById('datestamp');
+  if (el) el.textContent = formatDatestamp(getTz());
+}
+
+// ── render: crew ──────────────────────────────────────────────────────────────
+async function loadNudgesRecent() {
+  // Nudge pull from recent nudges (to current user, last 24h) via feed
+  // Full nudge history endpoint added in step 7; for now, display nothing
+  return [];
+}
+
+function renderCrew() {
+  if (!feedData) return;
+  const body = document.getElementById('crew-body');
+
+  // Nudge stack (last 24h nudges to logged-in user — wired fully in step 7)
+  let nudgeHtml = '';
+  // (nudges rendered here when push/nudge endpoint returns them in feed)
+
+  // Person cards in R-E-D order
+  const cards = feedData.users.map(u => {
+    const isOwn = u.id === userId;
+    const clickAttr = isOwn ? '' : `onclick="openNudgeSheet('${u.id}')"`;
+    const marks = renderMarks(u.marks, u.points);
+    return `
+      <div class="card${isOwn ? ' own' : ''}" ${clickAttr}>
+        <div class="card-top">
+          <div class="name">${u.name}</div>
+          <div class="streak">
+            <div class="streak-num">${u.streak}</div>
+            <div class="streak-lbl">Day streak</div>
+          </div>
+        </div>
+        <div class="goal">${u.goal_text || ''}</div>
+        ${marks}
+      </div>`;
+  }).join('');
+
+  // Food card
+  const food = `
+    <div class="food">
+      <div class="food-lbl">Easy protein today</div>
+      <div class="food-item">${todayFood()}</div>
+    </div>`;
+
+  body.innerHTML = nudgeHtml + cards + food;
+}
+
+function renderMarks(marks, points) {
+  const bar = (on) => `<i class="bar${on ? ' on' : ''}"></i>`;
+  const group = (bars, label) => `
+    <div class="group">
+      <div class="bars">${bars.map(bar).join('')}</div>
+      <div class="glbl">${label}</div>
+    </div>`;
+  return `
+    <div class="marks">
+      ${group(marks.water, 'Water')}
+      ${group(marks.move,  'Move')}
+      ${group(marks.sleep, 'Sleep')}
+      ${group(marks.mood,  'Mood')}
+      <div class="score"><b>${points}</b>/9</div>
+    </div>`;
+}
+
+// ── render: log ───────────────────────────────────────────────────────────────
+function renderLog() {
+  const body = document.getElementById('log-body');
+  const tz   = getTz();
+  const weightLogged = feedData?.users?.find(u => u.id === userId)?.weight_logged_today ?? false;
+  const sunday = isSunday(tz) && !weightLogged;
+  const bed  = meData?.bed_target  || '22:30';
+  const wake = meData?.wake_target || '06:30';
+  const hrs  = sleepHours(bed, wake);
+
+  const weightCard = sunday ? `
+    <div class="log-section-head">Weight</div>
+    <div class="log-card">
+      <div class="weight-row">
+        <input id="log-weight-val" class="weight-in" type="number" inputmode="decimal"
+               step="0.1" min="50" max="500" placeholder="—">
+        <span class="weight-unit">lbs</span>
+      </div>
+      <button class="log-btn" onclick="submitWeight()">Log Weight</button>
+    </div>` : '';
+
+  body.innerHTML = `
+    ${weightCard}
+
+    <div class="log-section-head">Water</div>
+    <div class="log-card">
+      <button class="water-btn" onclick="submitWater()">Log Water</button>
+      <div class="chips" id="oz-chips">
+        ${[8,16,24].map(oz =>
+          `<button class="chip${oz===logOz?' sel':''}" onclick="pickOz(${oz})">${oz} oz</button>`
+        ).join('')}
+      </div>
+    </div>
+
+    <div class="log-section-head">Move</div>
+    <div class="log-card">
+      <div class="chips activity" id="act-chips">
+        ${['Walk','Lift','Bike','Basketball','Yard work','Other'].map(a =>
+          `<button class="chip${a===logActivity?' sel':''}" onclick="pickActivity('${a}')">${a}</button>`
+        ).join('')}
+      </div>
+      <div class="chips" id="dur-chips">
+        ${[15,30,45,60].map(d =>
+          `<button class="chip${d===logDuration?' sel':''}" onclick="pickDuration(${d})">${d} min</button>`
+        ).join('')}
+        <button class="chip${logDuration==='custom'?' sel':''}" onclick="pickDuration('custom')">Custom</button>
+      </div>
+      <div id="dur-custom-wrap" style="${logDuration==='custom'?'':'display:none'}; margin-top:10px;">
+        <input id="dur-custom" type="number" inputmode="numeric" min="1" max="300"
+               class="weight-in" style="width:100%" placeholder="minutes">
+      </div>
+      <button class="log-btn" id="move-btn" onclick="submitMove()">Log Move</button>
+    </div>
+
+    <div class="log-section-head">Sleep</div>
+    <div class="log-card">
+      <div class="time-row">
+        <div class="time-field">
+          <div class="time-label">Bed at</div>
+          <input type="time" id="log-bed" value="${bed}" oninput="updateHoursDisplay()">
+        </div>
+        <div class="time-field">
+          <div class="time-label">Woke at</div>
+          <input type="time" id="log-wake" value="${wake}" oninput="updateHoursDisplay()">
+        </div>
+      </div>
+      <div id="hours-display" class="hours-display">${hrs != null ? hrs + ' hrs' : ''}</div>
+      <button class="log-btn" onclick="submitSleep()">Log Sleep</button>
+    </div>
+
+    <div class="log-section-head">Mood</div>
+    <div class="log-card">
+      <div class="mood-grid" id="mood-grid">
+        ${['Energized','Motivated','Content','Calm','Neutral','Tired','Stressed','Frustrated','Anxious','Down'].map(m =>
+          `<button class="mood-chip${m===logMood?' sel':''}" onclick="pickMood('${m}')">${m}</button>`
+        ).join('')}
+      </div>
+      <textarea class="mood-note" id="mood-note" rows="2" placeholder="Something else…"></textarea>
+      <button class="log-btn" onclick="submitMood()">Log Mood</button>
+    </div>
+  `;
+}
+
+// ── render: progress ─────────────────────────────────────────────────────────
+
+async function loadHistory(uid) {
+  progressUser = uid;
+  historyData  = null;
+  renderProgress();                                        // show loading state
+  const res = await fetch(`${API_BASE}/api/history?user=${uid}&days=30`);
+  historyData = await res.json();
+  renderProgress();
+}
+
+function renderProgress() {
+  if (!feedData) return;
+  const body = document.getElementById('progress-body');
+  const uid  = progressUser || userId;
+
+  const switcher = `<div class="user-switcher">
+    ${feedData.users.map(u =>
+      `<button class="switcher-btn${u.id === uid ? ' active' : ''}"
+               onclick="loadHistory('${u.id}')">${u.name}</button>`
+    ).join('')}
+  </div>`;
+
+  if (!historyData) {
+    body.innerHTML = switcher + '<div class="loading">Loading…</div>';
+    return;
+  }
+
+  const { streak, total_points, daily, weekly_weight, goal, log } = historyData;
+
+  const stats = `<div class="progress-stats">
+    <div class="pstat">
+      <span class="pstat-num">${streak}</span>
+      <span class="pstat-lbl">Day streak</span>
+    </div>
+    <div class="pstat">
+      <span class="pstat-num">${total_points}</span>
+      <span class="pstat-lbl">Points (30d)</span>
+    </div>
+  </div>`;
+
+  // ── weight chart (weekly) ──
+  const wtRange = weekly_weight.length
+    ? `${Math.min(...weekly_weight.map(d=>d.lbs)).toFixed(1)}–${Math.max(...weekly_weight.map(d=>d.lbs)).toFixed(1)} lbs`
+    : '';
+  const wtChart = chartSection('Weight', wtRange,
+    lineChart(weekly_weight.map(d => ({ y: d.lbs }))));
+
+  // ── points chart (daily) ──
+  const ptChart = chartSection('Points', '9 = perfect day',
+    barChart(daily.map(d => ({ y: d.points })), { maxY: 9, greenAt: 6 }));
+
+  // ── sleep chart (daily + goal) ──
+  const slGoal = goal.sleep_hours;
+  const slData  = daily.filter(d => d.sleep_hours != null).map(d => ({ y: d.sleep_hours }));
+  const slChart = chartSection('Sleep', slGoal ? `goal ${slGoal}h` : 'hours',
+    lineChart(slData, { goalY: slGoal }));
+
+  // ── move chart (daily minutes) ──
+  const mvMax = daily.length ? Math.max(...daily.map(d => d.move_minutes), 1) : 1;
+  const mvChart = chartSection('Movement', `${mvMax} min max`,
+    barChart(daily.map(d => ({ y: d.move_minutes }))));
+
+  // ── water chart (daily count, goal = full bar) ──
+  const wGoal = goal.water || 3;
+  const waterChart = chartSection('Water', `${wGoal} glasses = full`,
+    barChart(daily.map(d => ({ y: d.water_count })), { maxY: wGoal }));
+
+  body.innerHTML = switcher + stats + wtChart + ptChart + slChart + mvChart + waterChart
+    + renderHistoryLog(log, historyData.tz);
+}
+
+// ── html escaping ─────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// SVG viewBox: 320 × H, all charts scale to container width via width="100%"
+function lineChart(data, { goalY } = {}) {
+  if (!data.length) return '<div class="chart-empty">No data yet</div>';
+
+  const W = 320, H = 90;
+  const P = { t: 12, r: 6, b: 8, l: 6 };
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+
+  const ys = data.map(d => d.y);
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  if (goalY != null) { lo = Math.min(lo, goalY); hi = Math.max(hi, goalY); }
+  const range = hi - lo || 1;
+  lo -= range * 0.08; hi += range * 0.08;
+
+  // With 1 point, center it horizontally; otherwise spread across full width.
+  const sx = i  => data.length === 1 ? P.l + pw / 2 : P.l + (i / (data.length - 1)) * pw;
+  const sy = v  => P.t + ph - ((v - lo) / (hi - lo)) * ph;
+  const fx = n  => n.toFixed(1);
+
+  const pts  = data.map((d,i) => `${fx(sx(i))},${fx(sy(d.y))}`).join(' ');
+  const dots = data.map((d,i) =>
+    `<circle cx="${fx(sx(i))}" cy="${fx(sy(d.y))}" r="2.5" fill="var(--red-bright)"/>`
+  ).join('');
+
+  const goalLine = goalY != null ? `<line x1="${P.l}" y1="${fx(sy(goalY))}"
+    x2="${P.l+pw}" y2="${fx(sy(goalY))}"
+    stroke="rgba(255,255,255,.3)" stroke-width="1" stroke-dasharray="3,3"/>` : '';
+
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">
+    ${goalLine}
+    <polyline fill="none" stroke="var(--red-bright)" stroke-width="1.8"
+      stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>
+    ${dots}
+  </svg>`;
+}
+
+function barChart(data, { maxY, greenAt } = {}) {
+  if (!data.length) return '<div class="chart-empty">No data yet</div>';
+
+  const W = 320, H = 72;
+  const P = { t: 6, r: 4, b: 4, l: 4 };
+  const pw = W - P.l - P.r, ph = H - P.t - P.b;
+
+  const cap  = maxY ?? Math.max(...data.map(d => d.y), 1);
+  const slot = pw / data.length;
+  const gap  = Math.max(slot * 0.2, 1);
+  const bw   = Math.max(slot - gap, 1);
+
+  const baseline = P.t + ph;
+  const bars = data.map((d, i) => {
+    const x  = P.l + i * slot + gap / 2;
+    const wx = bw.toFixed(1);
+    if (d.y === 0) {
+      // 2px tick at the baseline — missed day reads as a mark, not empty space
+      return `<rect x="${x.toFixed(1)}" y="${(baseline - 2).toFixed(1)}"
+        width="${wx}" height="2" rx="1"
+        fill="var(--red-bright)" fill-opacity="0.35"/>`;
+    }
+    const frac    = Math.min(d.y / cap, 1);
+    const bh      = frac * ph;
+    const y       = baseline - bh;
+    const isGreen = greenAt != null ? d.y >= greenAt : true;
+    const op      = isGreen ? 0.9 : 0.5;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}"
+      width="${wx}" height="${bh.toFixed(1)}" rx="1.5"
+      fill="var(--red-bright)" fill-opacity="${op}"/>`;
+  }).join('');
+
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block">
+    ${bars}
+  </svg>`;
+}
+
+function chartSection(title, sub, inner) {
+  return `<div class="chart-section">
+    <div class="chart-head">
+      <span class="chart-title">${title}</span>
+      <span class="chart-sub">${sub}</span>
+    </div>
+    <div class="chart-wrap">${inner}</div>
+  </div>`;
+}
+
+function renderHistoryLog(rows, tz) {
+  if (!rows.length) return '';
+  const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                  'Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const entries = rows.map(r => {
+    const [yr, mo, dy] = r.local_date.split('-').map(Number);
+    const dow = DAYS[new Date(Date.UTC(yr, mo-1, dy)).getUTCDay()];
+    const ts  = `${dow} · ${MONTHS[mo-1]} ${dy} · ${r.local_time}`;
+
+    let detail;
+    switch (r.type) {
+      case 'water':  detail = `Water · ${r.qty || 16} oz`; break;
+      case 'move':   detail = `Move · ${esc(r.activity)}${r.duration_min ? ' · ' + r.duration_min + ' min' : ''}`; break;
+      case 'sleep':  detail = `Sleep · ${r.hours != null ? r.hours + ' hrs' : ''}${r.bed_at ? ' · bed ' + esc(r.bed_at) + (r.wake_at ? ' / up ' + esc(r.wake_at) : '') : ''}`; break;
+      case 'mood':   detail = `Mood · ${esc(r.mood)}${r.note ? ' — ' + esc(r.note) : ''}`; break;
+      case 'weight': detail = `Weight · ${r.qty} lbs`; break;
+      default:       detail = esc(r.type);
+    }
+    return `<div class="h-entry"><div class="h-ts">${ts}</div><div class="h-detail">${detail}</div></div>`;
+  }).join('');
+
+  return `<div class="history-section">
+    <div class="chart-title" style="margin-bottom:12px">Log</div>
+    ${entries}
+  </div>`;
+}
+
+// ── render: me ────────────────────────────────────────────────────────────────
+function renderMe() {
+  if (!meData) return;
+  const body = document.getElementById('me-body');
+  body.innerHTML = `
+    <div class="me-section-head">Profile</div>
+    <div class="me-row"><span class="me-label">Name</span><span class="me-value">${meData.name}</span></div>
+    <div class="me-row"><span class="me-label">Time zone</span><span class="me-value">${meData.tz}</span></div>
+    <div class="me-row"><span class="me-label">Goal</span><span class="me-value">${meData.goal_text || '—'}</span></div>
+
+    <div class="me-section-head" style="margin-top:32px">Sleep targets</div>
+    <div class="me-row"><span class="me-label">Bed</span><span class="me-value">${meData.bed_target || '—'}</span></div>
+    <div class="me-row"><span class="me-label">Wake</span><span class="me-value">${meData.wake_target || '—'}</span></div>
+    <div class="me-row"><span class="me-label">Hours goal</span><span class="me-value">${meData.sleep_hours_goal ? meData.sleep_hours_goal + ' hrs' : '—'}</span></div>
+
+    <div class="me-section-head" style="margin-top:32px">Daily goals</div>
+    <div class="me-row"><span class="me-label">Water</span><span class="me-value">${meData.water_goal} glasses</span></div>
+    <div class="me-row"><span class="me-label">Move</span><span class="me-value">${meData.move_goal} sessions</span></div>
+
+    <div style="margin-top:32px">
+      <button class="log-btn" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.14);color:rgba(255,255,255,.55);font-weight:400;font-size:14px;"
+              onclick="switchUser()">Switch user</button>
+    </div>
+  `;
+}
+
+// ── log actions ───────────────────────────────────────────────────────────────
+function pickOz(oz) {
+  logOz = oz;
+  document.querySelectorAll('#oz-chips .chip').forEach(c => {
+    c.classList.toggle('sel', parseInt(c.textContent) === oz);
+  });
+}
+
+function pickActivity(a) {
+  logActivity = a;
+  document.querySelectorAll('#act-chips .chip').forEach(c => {
+    c.classList.toggle('sel', c.textContent.trim() === a);
+  });
+}
+
+function pickDuration(d) {
+  logDuration = d;
+  document.querySelectorAll('#dur-chips .chip').forEach(c => {
+    const match = c.textContent.trim() === (d === 'custom' ? 'Custom' : d + ' min');
+    c.classList.toggle('sel', match);
+  });
+  const customWrap = document.getElementById('dur-custom-wrap');
+  if (customWrap) customWrap.style.display = d === 'custom' ? '' : 'none';
+}
+
+function pickMood(m) {
+  logMood = m;
+  document.querySelectorAll('#mood-grid .mood-chip').forEach(c => {
+    c.classList.toggle('sel', c.textContent === m);
+  });
+  const note = document.getElementById('mood-note');
+  if (note) note.placeholder = 'Add a note…';
+}
+
+function updateHoursDisplay() {
+  const bed  = document.getElementById('log-bed')?.value;
+  const wake = document.getElementById('log-wake')?.value;
+  const hrs  = sleepHours(bed, wake);
+  const el   = document.getElementById('hours-display');
+  if (el) el.textContent = hrs != null ? hrs + ' hrs' : '';
+}
+
+async function submitWater() {
+  const payload = buildCheckin('water', { qty: logOz });
+  await postCheckin(payload);
+  flash('Water logged');
+  await loadFeed();
+}
+
+async function submitMove() {
+  if (!logActivity) { flash('Pick an activity'); return; }
+  let durMins = typeof logDuration === 'number' ? logDuration : null;
+  if (logDuration === 'custom') {
+    durMins = parseInt(document.getElementById('dur-custom')?.value);
+    if (!durMins) { flash('Enter duration'); return; }
+  }
+  const payload = buildCheckin('move', { activity: logActivity, duration_min: durMins });
+  await postCheckin(payload);
+  flash(`${logActivity} logged`);
+  logActivity = null;
+  logDuration = null;
+  await loadFeed();
+  renderLog();
+}
+
+async function submitSleep() {
+  const bedAt  = document.getElementById('log-bed')?.value;
+  const wakeAt = document.getElementById('log-wake')?.value;
+  if (!bedAt || !wakeAt) { flash('Set bed and wake times'); return; }
+  const hrs = sleepHours(bedAt, wakeAt);
+  const payload = buildCheckin('sleep', { bed_at: bedAt, wake_at: wakeAt, hours: hrs });
+  await postCheckin(payload);
+  flash('Sleep logged');
+  await loadFeed();
+}
+
+async function submitMood() {
+  const note = document.getElementById('mood-note')?.value.trim();
+  const mood = logMood || (note ? 'Something else' : null);
+  if (!mood) { flash('Pick a mood'); return; }
+  const payload = buildCheckin('mood', { mood, note: note || null });
+  await postCheckin(payload);
+  flash('Mood logged');
+  logMood = null;
+  await loadFeed();
+  renderLog();
+}
+
+async function submitWeight() {
+  const val = parseFloat(document.getElementById('log-weight-val')?.value);
+  if (!val || val < 50 || val > 500) { flash('Enter a valid weight'); return; }
+  const payload = buildCheckin('weight', { qty: val });
+  await postCheckin(payload);
+  flash('Weight logged');
+  await loadFeed();  // weight_logged_today now comes from D1 via feed
+  renderLog();
+}
+
+// ── nudge sheet ───────────────────────────────────────────────────────────────
+function openNudgeSheet(targetId) {
+  if (targetId === userId) return;
+  nudgeTarget = targetId;
+  const targetUser = feedData?.users?.find(u => u.id === targetId);
+  document.getElementById('sheet-title').textContent = `Send to ${targetUser?.name || targetId}`;
+
+  const opts = Object.entries(NUDGE_LABELS).map(([kind, label]) =>
+    `<button class="nudge-opt" onclick="sendNudge('${kind}')">${label}</button>`
+  ).join('');
+  document.getElementById('sheet-opts').innerHTML = opts;
+
+  const overlay = document.getElementById('nudge-overlay');
+  overlay.style.display = 'block';
+  // Force reflow so transition fires
+  overlay.offsetHeight;
+  overlay.classList.add('open');
+}
+
+function closeNudgeSheet() {
+  const overlay = document.getElementById('nudge-overlay');
+  overlay.classList.remove('open');
+  setTimeout(() => { overlay.style.display = 'none'; nudgeTarget = null; }, 280);
+}
+
+async function sendNudge(kind) {
+  if (!nudgeTarget) return;
+  closeNudgeSheet();
+  try {
+    await postNudge(nudgeTarget, kind);
+    const targetUser = feedData?.users?.find(u => u.id === nudgeTarget);
+    flash(`Sent to ${targetUser?.name || nudgeTarget}`);
+  } catch {
+    flash('Could not send — check connection');
+  }
+}
+
+// ── nav ───────────────────────────────────────────────────────────────────────
+function setTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${name}`)?.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((b, i) => {
+    const tabs = ['crew','log','progress','me'];
+    b.classList.toggle('active', tabs[i] === name);
+  });
+  if (name === 'progress' && !historyData) {
+    loadHistory(progressUser || userId);
+  }
+}
+
+// ── first run ─────────────────────────────────────────────────────────────────
+function selectUser(id) {
+  userId = id;
+  localStorage.setItem('red_user_id', id);
+  showApp();
+}
+
+function switchUser() {
+  localStorage.removeItem('red_user_id');
+  localStorage.removeItem('red_tz');
+  userId = null; userTz = null; feedData = null; meData = null;
+  historyData = null; progressUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('nav').style.display = 'none';
+  document.getElementById('first-run').style.display = 'flex';
+}
+
+// ── flash ─────────────────────────────────────────────────────────────────────
+function flash(msg) {
+  const el = document.createElement('div');
+  el.className = 'flash';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+function showApp() {
+  progressUser = userId;
+  document.getElementById('first-run').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('nav').style.display = 'flex';
+  setTab('crew');
+  renderDatestamp();
+  Promise.all([loadFeed(), loadMe()]);
+  // Refresh datestamp every minute
+  setInterval(renderDatestamp, 60000);
+}
+
+if (userId) {
+  showApp();
+} else {
+  document.getElementById('first-run').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('nav').style.display = 'none';
+}
+</script>
+</body>
+</html>

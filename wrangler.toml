@@ -1,0 +1,8 @@
+name = "red-accountability-worker"
+main = "src/index.js"
+compatibility_date = "2026-07-27"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "red-accountability"
+database_id = "89540b2c-3f56-4b82-bf7a-774b50611854"
