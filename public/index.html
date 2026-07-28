@@ -251,8 +251,10 @@ input.weight-in {
 /* ── first run ── */
 .fr-wordmark { font-weight: 700; font-size: 24px; letter-spacing: .22em; color: var(--white); margin-bottom: 10px; }
 .fr-wordmark span { color: var(--red-bright); }
-.fr-sub { font-size: 14px; font-weight: 300; color: rgba(255,255,255,.72); margin-bottom: 48px; text-align: center; }
-.fr-cards { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 340px; }
+.fr-sub { font-size: 14px; font-weight: 300; color: rgba(255,255,255,.72); margin-bottom: 32px; text-align: center; }
+.fr-body { font-size: 15px; font-weight: 300; color: rgba(255,255,255,.72); text-align: center; line-height: 1.6; margin-bottom: 36px; max-width: 300px; }
+.fr-step { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 340px; }
+.fr-cards { display: flex; flex-direction: column; gap: 12px; width: 100%; }
 .fr-card {
   background: var(--white); border-radius: 20px; padding: 28px 24px;
   font-weight: 600; font-size: 38px; letter-spacing: -.025em; color: var(--navy);
@@ -260,6 +262,32 @@ input.weight-in {
   -webkit-tap-highlight-color: transparent; transition: transform .1s;
 }
 .fr-card:active { transform: scale(.97); }
+.fr-confirm-rows {
+  width: 100%; background: rgba(255,255,255,.06); border-radius: 16px;
+  overflow: hidden; margin-bottom: 28px;
+}
+.fr-confirm-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 15px 18px; border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.fr-confirm-row:last-child { border-bottom: none; }
+.fr-confirm-lbl { font-size: 14px; color: rgba(255,255,255,.6); }
+.fr-confirm-val { font-size: 14px; font-weight: 600; color: var(--white); }
+.fr-install-rows { width: 100%; display: flex; flex-direction: column; gap: 18px; margin-bottom: 36px; }
+.fr-install-row { display: flex; align-items: flex-start; gap: 16px; }
+.fr-install-icon {
+  width: 44px; height: 44px; min-width: 44px; border-radius: 12px;
+  background: rgba(255,255,255,.1); display: flex; align-items: center;
+  justify-content: center; font-size: 20px;
+}
+.fr-install-label { font-size: 15px; color: rgba(255,255,255,.85); line-height: 1.4; padding-top: 10px; }
+.fr-install-label small { display: block; color: rgba(255,255,255,.5); font-size: 12px; margin-top: 3px; }
+.fr-skip {
+  background: none; border: none; padding: 16px 24px; margin-top: 4px;
+  color: rgba(255,255,255,.45); font-size: 14px; font-family: inherit;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.fr-full-btn { width: 100%; }
 
 /* ── nudge sheet ── */
 #nudge-overlay {
@@ -387,13 +415,45 @@ input.weight-in {
 
 <!-- ── First run ── -->
 <div id="first-run">
-  <div class="fr-wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
-  <p class="fr-sub">Who are you?</p>
-  <div class="fr-cards">
-    <button class="fr-card" onclick="selectUser('ray')">Ray</button>
-    <button class="fr-card" onclick="selectUser('evan')">Evan</button>
-    <button class="fr-card" onclick="selectUser('daniel')">Daniel</button>
+
+  <!-- Step 1: Name -->
+  <div id="fr-name" class="fr-step">
+    <div class="fr-wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+    <p class="fr-sub">Who are you?</p>
+    <div class="fr-cards">
+      <button class="fr-card" onclick="frPickName('ray')">Ray</button>
+      <button class="fr-card" onclick="frPickName('evan')">Evan</button>
+      <button class="fr-card" onclick="frPickName('daniel')">Daniel</button>
+    </div>
   </div>
+
+  <!-- Step 2: Confirm setup -->
+  <div id="fr-confirm" class="fr-step">
+    <div class="fr-wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+    <p class="fr-sub">Your setup</p>
+    <div class="fr-confirm-rows" id="fr-confirm-rows"></div>
+    <button class="log-btn fr-full-btn" onclick="frAfterConfirm()">Looks good →</button>
+  </div>
+
+  <!-- Step 3: Install gate -->
+  <div id="fr-install" class="fr-step">
+    <div class="fr-wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+    <p class="fr-sub">Add to your home screen</p>
+    <div class="fr-install-rows" id="fr-install-rows"></div>
+    <p style="font-size:13px;color:rgba(255,255,255,.45);text-align:center;line-height:1.5">
+      Open R.E.D. from your home screen to continue.
+    </p>
+  </div>
+
+  <!-- Step 4: Notifications -->
+  <div id="fr-notify" class="fr-step">
+    <div class="fr-wordmark">R<span>.</span>E<span>.</span>D<span>.</span></div>
+    <p class="fr-sub">Stay on track</p>
+    <p class="fr-body">R.E.D. will remind you to check in 6 times a day — and ping you when the crew sends a nudge.</p>
+    <button class="log-btn fr-full-btn" onclick="frRequestNotify()">Allow notifications →</button>
+    <button class="fr-skip" onclick="frFinish()">Skip for now</button>
+  </div>
+
 </div>
 
 <!-- ── App ── -->
@@ -1193,20 +1253,99 @@ async function requestPushPermission(uid) {
 }
 
 // ── first run ─────────────────────────────────────────────────────────────────
-function selectUser(id) {
-  userId = id;
+let frPendingId = null;
+
+const FR_SETUP = {
+  ray:    { tz: 'Eastern',  bed: '10:30 PM', wake: '6:00 AM', hours: '7.5h' },
+  evan:   { tz: 'Eastern',  bed: '11:00 PM', wake: '7:00 AM', hours: '8h'   },
+  daniel: { tz: 'Central',  bed: '10:30 PM', wake: '6:30 AM', hours: '7h'   },
+};
+
+function frShow(step) {
+  document.querySelectorAll('.fr-step').forEach(s => s.style.display = 'none');
+  const el = document.getElementById(`fr-${step}`);
+  if (el) el.style.display = 'flex';
+  document.getElementById('first-run').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('nav').style.display = 'none';
+}
+
+function isStandalone() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function frPickName(id) {
+  frPendingId = id;
+  // Persist now so install gate → reopen still knows who this is
   localStorage.setItem('red_user_id', id);
+  userId = id;
+
+  const cfg = FR_SETUP[id] || {};
+  document.getElementById('fr-confirm-rows').innerHTML = [
+    ['Timezone',    cfg.tz],
+    ['Bed target',  cfg.bed],
+    ['Wake target', cfg.wake],
+    ['Sleep goal',  cfg.hours],
+  ].map(([l, v]) => `
+    <div class="fr-confirm-row">
+      <span class="fr-confirm-lbl">${l}</span>
+      <span class="fr-confirm-val">${v}</span>
+    </div>`).join('');
+
+  frShow('confirm');
+}
+
+function frAfterConfirm() {
+  if (isStandalone()) {
+    frShow('notify');
+  } else {
+    frBuildInstall();
+    frShow('install');
+  }
+}
+
+function frBuildInstall() {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const rows = ios ? [
+    { icon: '⬆', text: 'Tap the Share button', sub: 'at the bottom of Safari' },
+    { icon: '＋', text: 'Tap "Add to Home Screen"', sub: '' },
+  ] : [
+    { icon: '⋮', text: 'Open browser menu', sub: 'top-right corner' },
+    { icon: '＋', text: 'Tap "Add to Home Screen" or "Install App"', sub: '' },
+  ];
+  document.getElementById('fr-install-rows').innerHTML = rows.map(r => `
+    <div class="fr-install-row">
+      <div class="fr-install-icon">${r.icon}</div>
+      <div class="fr-install-label">${r.text}${r.sub ? `<small>${r.sub}</small>` : ''}</div>
+    </div>`).join('');
+}
+
+async function frRequestNotify() {
+  if ('Notification' in window && Notification.permission !== 'denied') {
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      await registerSW();
+      await subscribePush(frPendingId || userId).catch(() => {});
+    }
+  }
+  frFinish();
+}
+
+function frFinish() {
+  userId = frPendingId || userId;
+  localStorage.setItem('red_user_id', userId);
+  localStorage.setItem('red_onboarded', '1');
   showApp();
 }
 
 function switchUser() {
   localStorage.removeItem('red_user_id');
   localStorage.removeItem('red_tz');
+  localStorage.removeItem('red_onboarded');
   userId = null; userTz = null; feedData = null; meData = null;
-  historyData = null; progressUser = null;
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('nav').style.display = 'none';
-  document.getElementById('first-run').style.display = 'flex';
+  historyData = null; progressUser = null; frPendingId = null;
+  frShow('name');
 }
 
 // ── flash ─────────────────────────────────────────────────────────────────────
@@ -1228,18 +1367,39 @@ function showApp() {
   renderDatestamp();
   Promise.all([loadFeed(), loadMe()]);
   setInterval(renderDatestamp, 60000);
-
-  // Register SW and subscribe to push (no-op if already subscribed)
-  registerSW().then(() => requestPushPermission(userId));
+  // Keep SW + subscription current on every launch
+  registerSW().then(() => subscribePush(userId).catch(() => {}));
 }
 
-if (userId) {
-  showApp();
-} else {
-  document.getElementById('first-run').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('nav').style.display = 'none';
-}
+(function init() {
+  const onboarded = localStorage.getItem('red_onboarded');
+  if (onboarded && userId) {
+    showApp();
+    return;
+  }
+  // Partially through onboarding
+  if (userId) {
+    frPendingId = userId;
+    if (isStandalone()) {
+      // Installed — go straight to notification step
+      if (Notification.permission === 'granted') {
+        // Already granted (e.g. prior install) — subscribe silently and launch
+        localStorage.setItem('red_onboarded', '1');
+        registerSW().then(() => subscribePush(userId).catch(() => {}));
+        showApp();
+      } else {
+        frShow('notify');
+      }
+    } else {
+      // Not installed yet — show install gate
+      frBuildInstall();
+      frShow('install');
+    }
+    return;
+  }
+  // Fresh first run
+  frShow('name');
+})();
 </script>
 </body>
 </html>
