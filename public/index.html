@@ -569,7 +569,7 @@ function sleepHours(bedAt, wakeAt) {
 async function loadFeed() {
   const tz   = getTz();
   const date = localDate(tz);
-  const res  = await fetch(`${API_BASE}/api/feed?date=${date}&tz=${encodeURIComponent(tz)}`);
+  const res  = await fetch(`${API_BASE}/api/feed?date=${date}&tz=${encodeURIComponent(tz)}&viewer=${userId}`);
   feedData = await res.json();
   const me = feedData.users.find(u => u.id === userId);
   if (me?.tz) { userTz = me.tz; localStorage.setItem('red_tz', userTz); }
@@ -629,9 +629,21 @@ function renderCrew() {
   if (!feedData) return;
   const body = document.getElementById('crew-body');
 
-  // Nudge stack (last 24h nudges to logged-in user — wired fully in step 7)
+  // Nudge stack — last 24h nudges sent to the logged-in user
   let nudgeHtml = '';
-  // (nudges rendered here when push/nudge endpoint returns them in feed)
+  if (feedData.nudges?.length) {
+    const items = feedData.nudges.map(n => {
+      const sender = feedData.users.find(u => u.id === n.from_user);
+      const label  = NUDGE_LABELS[n.kind] || n.kind;
+      const time   = formatNudgeTime(n.ts_utc);
+      return `<div class="nudge">
+        <span class="nudge-dot"></span>
+        <span class="nudge-text"><b>${esc(sender?.name || n.from_user)}</b> — ${esc(label)}</span>
+        <span class="nudge-time">${time}</span>
+      </div>`;
+    }).join('');
+    nudgeHtml = `<div class="nudges">${items}</div>`;
+  }
 
   // Person cards in R-E-D order
   const cards = feedData.users.map(u => {

@@ -199,7 +199,8 @@ async function handleCheckin(request, env, corsHeaders) {
 
 async function handleFeed(url, env, corsHeaders) {
   let date = url.searchParams.get('date');
-  const tz  = url.searchParams.get('tz');
+  const tz     = url.searchParams.get('tz');
+  const viewer = url.searchParams.get('viewer');
 
   if (!date) {
     date = tz
@@ -242,7 +243,19 @@ async function handleFeed(url, env, corsHeaders) {
     };
   });
 
-  return json({ date, users: usersOut }, 200, corsHeaders);
+  // Nudges sent to the viewer in the last 24h
+  let nudges = [];
+  if (viewer) {
+    const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { results } = await env.DB.prepare(
+      `SELECT from_user, kind, ts_utc FROM nudges
+       WHERE to_user = ? AND ts_utc >= ?
+       ORDER BY ts_utc DESC LIMIT 10`
+    ).bind(viewer, cutoff).all();
+    nudges = results;
+  }
+
+  return json({ date, users: usersOut, nudges }, 200, corsHeaders);
 }
 
 async function handleMe(url, env, corsHeaders) {
