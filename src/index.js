@@ -343,6 +343,39 @@ async function handleHistory(url, env, corsHeaders) {
   }, 200, corsHeaders);
 }
 
+// ── cron reminders ────────────────────────────────────────────────────────────
+
+// Local hours at which we fire a reminder (7am 10am noon 3pm 6pm 9pm)
+const REMINDER_HOURS = [7, 10, 12, 15, 18, 21];
+
+async function runReminders(env) {
+  const { results: users } = await env.DB.prepare(
+    'SELECT * FROM users WHERE push_sub IS NOT NULL'
+  ).all();
+
+  const now = new Date();
+
+  for (const user of users) {
+    // Resolve user's current local hour
+    const localHour = parseInt(
+      now.toLocaleTimeString('en-US', { timeZone: user.tz, hour: '2-digit', hour12: false })
+    ) % 24;
+
+    if (!REMINDER_HOURS.includes(localHour)) continue;
+
+    // Check today's points — skip if already green (6+)
+    const localDate = now.toLocaleDateString('en-CA', { timeZone: user.tz });
+    const { results: checkins } = await env.DB.prepare(
+      'SELECT * FROM checkins WHERE user_id = ? AND local_date = ?'
+    ).bind(user.id, localDate).all();
+
+    const points = marksToPoints(computeMarks(checkins, user));
+    if (points >= 6) continue;
+
+    await sendPush(user.push_sub, env);
+  }
+}
+
 // ── entry point ───────────────────────────────────────────────────────────────
 
 export default {
@@ -368,5 +401,9 @@ export default {
       console.error(e);
       return json({ error: e.message }, 500, corsHeaders);
     }
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runReminders(env));
   },
 };

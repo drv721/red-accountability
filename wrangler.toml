@@ -13,3 +13,6 @@ custom_domain = true
 
 [vars]
 VAPID_PUBLIC_KEY = "BHxwL2kPQvRj73DTlByH3nKhuFP5O4zIrB7Ylq8QcWOLLOj3EfUZXKcHHWjLZkakAgUav6DDd_1N8MPgTjVn4tg"
+
+[triggers]
+crons = ["0 * * * *"]
