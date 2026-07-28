@@ -336,6 +336,18 @@ input.weight-in {
   font-size: 12px; font-weight: 600; letter-spacing: .03em;
   color: rgba(255,255,255,.72); margin: 28px 0 4px;
 }
+input.me-time {
+  background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.14);
+  border-radius: 10px; color: #fff; font-size: 16px; padding: 8px 12px;
+  font-family: 'JetBrains Mono', monospace; outline: none; -webkit-appearance: none;
+  width: 120px; text-align: center;
+}
+input.me-hours {
+  background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.14);
+  border-radius: 10px; color: #fff; font-size: 16px; padding: 8px 12px;
+  font-family: 'JetBrains Mono', monospace; outline: none; -webkit-appearance: none;
+  width: 80px; text-align: center;
+}
 
 /* ── flash ── */
 .flash {
@@ -1038,9 +1050,20 @@ function renderMe() {
     <div class="me-row"><span class="me-label">Goal</span><span class="me-value">${meData.goal_text || '—'}</span></div>
 
     <div class="me-section-head" style="margin-top:32px">Sleep targets</div>
-    <div class="me-row"><span class="me-label">Bed</span><span class="me-value">${meData.bed_target || '—'}</span></div>
-    <div class="me-row"><span class="me-label">Wake</span><span class="me-value">${meData.wake_target || '—'}</span></div>
-    <div class="me-row"><span class="me-label">Hours goal</span><span class="me-value">${meData.sleep_hours_goal ? meData.sleep_hours_goal + ' hrs' : '—'}</span></div>
+    <div class="me-row">
+      <span class="me-label">Bed</span>
+      <input class="me-time" type="time" id="me-bed" value="${meData.bed_target || ''}">
+    </div>
+    <div class="me-row">
+      <span class="me-label">Wake</span>
+      <input class="me-time" type="time" id="me-wake" value="${meData.wake_target || ''}">
+    </div>
+    <div class="me-row">
+      <span class="me-label">Hours goal</span>
+      <input class="me-hours" type="number" id="me-hours" inputmode="decimal"
+             min="4" max="12" step="0.5" value="${meData.sleep_hours_goal || ''}">
+    </div>
+    <button class="log-btn" style="margin-top:16px" onclick="saveSleepTargets()">Save sleep targets</button>
 
     <div class="me-section-head" style="margin-top:32px">Daily goals</div>
     <div class="me-row"><span class="me-label">Water</span><span class="me-value">${meData.water_goal} glasses</span></div>
@@ -1051,6 +1074,32 @@ function renderMe() {
               onclick="switchUser()">Switch user</button>
     </div>
   `;
+}
+
+// ── me actions ────────────────────────────────────────────────────────────────
+async function saveSleepTargets() {
+  const bed   = document.getElementById('me-bed')?.value;
+  const wake  = document.getElementById('me-wake')?.value;
+  const hours = parseFloat(document.getElementById('me-hours')?.value);
+
+  if (!bed || !wake) { flash('Set both bed and wake times'); return; }
+  if (isNaN(hours) || hours < 4 || hours > 12) { flash('Hours must be between 4 and 12'); return; }
+
+  const res = await fetch(`${API_BASE}/api/me?user=${userId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bed_target: bed, wake_target: wake, sleep_hours_goal: hours }),
+  });
+
+  if (res.ok) {
+    meData.bed_target        = bed;
+    meData.wake_target       = wake;
+    meData.sleep_hours_goal  = hours;
+    flash('Sleep targets saved');
+    renderLog(); // refresh log tab so sleep form prefills with new targets
+  } else {
+    flash('Could not save — check connection');
+  }
 }
 
 // ── log actions ───────────────────────────────────────────────────────────────

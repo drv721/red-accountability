@@ -16,7 +16,7 @@ function getCORSHeaders(request) {
     /^http:\/\/localhost(:\d+)?$/.test(origin);
   return {
     'Access-Control-Allow-Origin': allowed ? origin : 'https://red.builtbyvega.com',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 }
@@ -266,6 +266,24 @@ async function handleMe(url, env, corsHeaders) {
   return json(user, 200, corsHeaders);
 }
 
+async function handleMePatch(request, url, env, corsHeaders) {
+  const user_id = url.searchParams.get('user');
+  if (!user_id) return json({ error: 'Missing user param' }, 400, corsHeaders);
+
+  let body;
+  try { body = await request.json(); } catch {
+    return json({ error: 'Invalid JSON' }, 400, corsHeaders);
+  }
+
+  const { bed_target, wake_target, sleep_hours_goal } = body;
+
+  await env.DB.prepare(
+    `UPDATE users SET bed_target = ?, wake_target = ?, sleep_hours_goal = ? WHERE id = ?`
+  ).bind(bed_target ?? null, wake_target ?? null, sleep_hours_goal ?? null, user_id).run();
+
+  return json({ ok: true }, 200, corsHeaders);
+}
+
 async function handleSubscribe(request, env, corsHeaders) {
   let body;
   try { body = await request.json(); } catch {
@@ -403,12 +421,13 @@ export default {
     const path = url.pathname;
 
     try {
-      if (path === '/api/checkin'   && request.method === 'POST') return handleCheckin(request, env, corsHeaders);
-      if (path === '/api/feed'      && request.method === 'GET')  return handleFeed(url, env, corsHeaders);
-      if (path === '/api/me'        && request.method === 'GET')  return handleMe(url, env, corsHeaders);
-      if (path === '/api/subscribe' && request.method === 'POST') return handleSubscribe(request, env, corsHeaders);
-      if (path === '/api/nudge'     && request.method === 'POST') return handleNudge(request, env, corsHeaders);
-      if (path === '/api/history'   && request.method === 'GET')  return handleHistory(url, env, corsHeaders);
+      if (path === '/api/checkin'   && request.method === 'POST')  return handleCheckin(request, env, corsHeaders);
+      if (path === '/api/feed'      && request.method === 'GET')   return handleFeed(url, env, corsHeaders);
+      if (path === '/api/me'        && request.method === 'GET')   return handleMe(url, env, corsHeaders);
+      if (path === '/api/me'        && request.method === 'PATCH') return handleMePatch(request, url, env, corsHeaders);
+      if (path === '/api/subscribe' && request.method === 'POST')  return handleSubscribe(request, env, corsHeaders);
+      if (path === '/api/nudge'     && request.method === 'POST')  return handleNudge(request, env, corsHeaders);
+      if (path === '/api/history'   && request.method === 'GET')   return handleHistory(url, env, corsHeaders);
       return json({ error: 'Not found' }, 404, corsHeaders);
     } catch (e) {
       console.error(e);
