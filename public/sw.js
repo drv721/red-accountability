@@ -25,10 +25,22 @@ self.addEventListener('push', event => {
       return fetch(`${API_BASE}/api/feed?tz=${encodeURIComponent(tz)}`)
         .then(r => r.json())
         .then(data => {
-          const me   = data.users.find(u => u.id === userId);
-          const body = me
-            ? `${me.points}/9 today · ${me.streak}-day streak`
-            : 'Time to check in';
+          const me = data.users.find(u => u.id === userId);
+
+          // A streak alert on anyone's card outranks the routine reminder —
+          // that's the whole point of the crew getting pinged together.
+          const alerted = (data.users || []).filter(u => u.streak_alert);
+          let body;
+          if (alerted.length) {
+            const names = alerted.map(u => u.name).join(', ');
+            const worst = alerted.some(u => u.streak_alert === 'escalate') ? 'escalate' : 'grace';
+            body = worst === 'escalate'
+              ? `${names} missed 2 days in a row — go check in on them`
+              : `${names} missed yesterday — send a nudge`;
+          } else {
+            body = me ? `${me.points}/9 today · ${me.streak}-day streak` : 'Time to check in';
+          }
+
           return self.registration.showNotification('R.E.D.', {
             body,
             icon: '/icon-192.png',

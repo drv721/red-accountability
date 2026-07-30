@@ -148,16 +148,39 @@ function marksToPoints(marks) {
   );
 }
 
-function computeStreak(userCheckins, user, asOfDate) {
-  const todayPts = marksToPoints(computeMarks(userCheckins[asOfDate] || [], user));
-  let date  = todayPts >= 6 ? asOfDate : subtractDays(asOfDate, 1);
+// Streak is presence-based, not points-based: any check-in logged that day
+// keeps it alive. A single missed day is forgiven (frozen, doesn't count,
+// doesn't break); two missed days in a row ends it.
+function hasCheckin(userCheckins, date) {
+  return (userCheckins[date] || []).length > 0;
+}
+
+function computeStreak(userCheckins, asOfDate) {
+  let date   = hasCheckin(userCheckins, asOfDate) ? asOfDate : subtractDays(asOfDate, 1);
   let streak = 0;
+  let misses = 0;
   for (let i = 0; i < 90; i++) {
-    const pts = marksToPoints(computeMarks(userCheckins[date] || [], user));
-    if (pts >= 6) { streak++; date = subtractDays(date, 1); }
-    else { break; }
+    if (hasCheckin(userCheckins, date)) {
+      streak++;
+      misses = 0;
+    } else {
+      misses++;
+      if (misses >= 2) break;
+    }
+    date = subtractDays(date, 1);
   }
   return streak;
+}
+
+// Live "needs a nudge" state for a user's card — computed fresh on every
+// feed request, independent of whether the cron has already alerted for it.
+// Clears itself the moment today has a check-in.
+function computeStreakAlert(userCheckins, today) {
+  if (hasCheckin(userCheckins, today)) return null;
+  const yesterday = subtractDays(today, 1);
+  if (hasCheckin(userCheckins, yesterday)) return null;
+  const dayBefore = subtractDays(today, 2);
+  return hasCheckin(userCheckins, dayBefore) ? 'grace' : 'escalate';
 }
 
 // ── handlers ──────────────────────────────────────────────────────────────────
@@ -238,13 +261,14 @@ async function handleFeed(url, env, corsHeaders) {
     const todayCheckins = userCheckins[userToday] || [];
     const marks         = computeMarks(todayCheckins, user);
     const points        = marksToPoints(marks);
-    const streak        = computeStreak(userCheckins, user, userToday);
+    const streak        = computeStreak(userCheckins, userToday);
+    const streakAlert   = computeStreakAlert(userCheckins, userToday);
     const weightLoggedToday = todayCheckins.some(c => c.type === 'weight');
 
     return {
       id: user.id, name: user.name, tz: user.tz,
       goal_type: user.goal_type, goal_text: user.goal_text,
-      streak, points, total: 9, marks,
+      streak, streak_alert: streakAlert, points, total: 9, marks,
       weight_logged_today: weightLoggedToday,
     };
   });
@@ -373,7 +397,7 @@ async function handleHistory(url, env, corsHeaders) {
   return json({
     user_id, tz: user.tz,
     goal: { sleep_hours: user.sleep_hours_goal, water: user.water_goal },
-    streak:       computeStreak(byDate, user, endDate),
+    streak:       computeStreak(byDate, endDate),
     total_points: daily.reduce((s, d) => s + d.points, 0),
     daily, weekly_weight: weeklyWeight,
     log: rows,
@@ -413,6 +437,49 @@ async function runReminders(env) {
   }
 }
 
+async function hasAnyCheckin(env, userId, date) {
+  const row = await env.DB.prepare(
+    'SELECT 1 FROM checkins WHERE user_id = ? AND local_date = ? LIMIT 1'
+  ).bind(userId, date).first();
+  return !!row;
+}
+
+// Runs once per user shortly after their local day rolls over. Detects a
+// missed previous day and, on the first detection only (streak_alerts is
+// the dedup guard), pushes to the whole crew — including the person who
+// missed — so they can be nudged before a second miss breaks the streak.
+async function checkStreakAlerts(env) {
+  const { results: users } = await env.DB.prepare('SELECT * FROM users').all();
+  const now = new Date();
+
+  for (const user of users) {
+    const localHour = parseInt(
+      now.toLocaleTimeString('en-US', { timeZone: user.tz, hour: '2-digit', hour12: false })
+    ) % 24;
+    if (localHour !== 1) continue; // once a day, well after midnight rollover
+
+    const today     = now.toLocaleDateString('en-CA', { timeZone: user.tz });
+    const yesterday = subtractDays(today, 1);
+
+    if (await hasAnyCheckin(env, user.id, yesterday)) continue; // no miss, nothing to do
+
+    const dayBefore = subtractDays(today, 2);
+    const level = (await hasAnyCheckin(env, user.id, dayBefore)) ? 'grace' : 'escalate';
+
+    const result = await env.DB.prepare(
+      `INSERT OR IGNORE INTO streak_alerts (user_id, missed_date, level, ts_utc)
+       VALUES (?, ?, ?, ?)`
+    ).bind(user.id, yesterday, level, now.toISOString()).run();
+
+    if (result.meta.changes === 0) continue; // already alerted for this day
+
+    const { results: crew } = await env.DB.prepare(
+      'SELECT push_sub FROM users WHERE push_sub IS NOT NULL'
+    ).all();
+    for (const member of crew) await sendPush(member.push_sub, env);
+  }
+}
+
 // ── entry point ───────────────────────────────────────────────────────────────
 
 export default {
@@ -443,5 +510,6 @@ export default {
 
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runReminders(env));
+    ctx.waitUntil(checkStreakAlerts(env));
   },
 };

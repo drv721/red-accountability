@@ -101,6 +101,16 @@ html, body {
 }
 .goal { font-size: 12.5px; font-weight: 300; color: var(--muted); margin-bottom: 19px; }
 
+/* ── streak alert banner ── */
+.alert {
+  display: flex; align-items: center; gap: 7px;
+  margin: -9px 0 16px; padding: 8px 12px;
+  border-radius: 10px; border: 1.5px solid var(--red);
+  font-size: 12.5px; font-weight: 600; color: var(--red);
+}
+.alert.escalate { background: rgba(211,47,47,.08); }
+.alert-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+
 /* ── nine marks ── */
 .marks { display: flex; align-items: flex-end; gap: 16px; }
 .group { display: flex; flex-direction: column; gap: 8px; }
@@ -722,6 +732,7 @@ function renderCrew() {
     const isOwn = u.id === userId;
     const clickAttr = isOwn ? '' : `onclick="openNudgeSheet('${u.id}')"`;
     const marks = renderMarks(u.marks, u.points);
+    const alert = renderStreakAlert(u, isOwn);
     return `
       <div class="card${isOwn ? ' own' : ''}" ${clickAttr}>
         <div class="card-top">
@@ -732,6 +743,7 @@ function renderCrew() {
           </div>
         </div>
         <div class="goal">${u.goal_text || ''}</div>
+        ${alert}
         ${marks}
       </div>`;
   }).join('');
@@ -744,6 +756,18 @@ function renderCrew() {
     </div>`;
 
   body.innerHTML = nudgeHtml + cards + food;
+}
+
+function renderStreakAlert(u, isOwn) {
+  if (!u.streak_alert) return '';
+  const escalate = u.streak_alert === 'escalate';
+  const text = isOwn
+    ? (escalate ? "You've missed 2 days in a row — check in to save your streak" : 'You missed yesterday — check in today to keep it alive')
+    : (escalate ? `${u.name} missed 2 days in a row — go motivate them` : `${u.name} missed yesterday — send a nudge`);
+  return `
+    <div class="alert${escalate ? ' escalate' : ''}">
+      <span class="alert-dot"></span>${esc(text)}
+    </div>`;
 }
 
 function renderMarks(marks, points) {
