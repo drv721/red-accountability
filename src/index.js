@@ -213,12 +213,15 @@ async function handleFeed(url, env, corsHeaders) {
     `SELECT * FROM users ORDER BY ${orderExpr}`
   ).all();
 
+  // Query window padded a day past `date` since a user's own tz can be
+  // ahead of the viewer's tz used to derive `date` above.
   const startDate = subtractDays(date, 90);
+  const endDate    = addDay(date);
   const { results: allCheckins } = await env.DB.prepare(
     `SELECT * FROM checkins
      WHERE local_date >= ? AND local_date <= ?
      ORDER BY local_date DESC, ts_utc DESC`
-  ).bind(startDate, date).all();
+  ).bind(startDate, endDate).all();
 
   const checkinMap = {};
   for (const ck of allCheckins) {
@@ -228,11 +231,14 @@ async function handleFeed(url, env, corsHeaders) {
   }
 
   const usersOut = users.map(user => {
+    // Each user's "today" is resolved from their own tz, not the viewer's —
+    // marks/streak must never be scored against someone else's calendar day.
+    const userToday     = new Date().toLocaleDateString('en-CA', { timeZone: user.tz });
     const userCheckins  = checkinMap[user.id] || {};
-    const todayCheckins = userCheckins[date]  || [];
+    const todayCheckins = userCheckins[userToday] || [];
     const marks         = computeMarks(todayCheckins, user);
     const points        = marksToPoints(marks);
-    const streak        = computeStreak(userCheckins, user, date);
+    const streak        = computeStreak(userCheckins, user, userToday);
     const weightLoggedToday = todayCheckins.some(c => c.type === 'weight');
 
     return {
