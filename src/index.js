@@ -264,11 +264,15 @@ async function handleFeed(url, env, corsHeaders) {
     const streak        = computeStreak(userCheckins, userToday);
     const streakAlert   = computeStreakAlert(userCheckins, userToday);
     const weightLoggedToday = todayCheckins.some(c => c.type === 'weight');
+    // Share the mood word with the crew, never the free-text note that can
+    // accompany it — that note is closer to a private journal entry.
+    const moodToday = todayCheckins.find(c => c.type === 'mood')?.mood ?? null;
 
     return {
       id: user.id, name: user.name, tz: user.tz,
       goal_type: user.goal_type, goal_text: user.goal_text,
       streak, streak_alert: streakAlert, points, total: 9, marks,
+      mood: moodToday,
       weight_logged_today: weightLoggedToday,
     };
   });

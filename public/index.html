@@ -111,6 +111,13 @@ html, body {
 .alert.escalate { background: rgba(211,47,47,.08); }
 .alert-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
 
+/* ── today's mood ── */
+.mood-tag {
+  display: inline-block; margin: 0 0 16px; padding: 6px 12px;
+  border-radius: 100px; background: rgba(0,45,114,.06);
+  font-size: 12px; font-weight: 600; color: var(--navy);
+}
+
 /* ── nine marks ── */
 .marks { display: flex; align-items: flex-end; gap: 16px; }
 .group { display: flex; flex-direction: column; gap: 8px; }
@@ -733,6 +740,7 @@ function renderCrew() {
     const clickAttr = isOwn ? '' : `onclick="openNudgeSheet('${u.id}')"`;
     const marks = renderMarks(u.marks, u.points);
     const alert = renderStreakAlert(u, isOwn);
+    const mood  = u.mood ? `<div class="mood-tag">${esc(u.mood)}</div>` : '';
     return `
       <div class="card${isOwn ? ' own' : ''}" ${clickAttr}>
         <div class="card-top">
@@ -744,6 +752,7 @@ function renderCrew() {
         </div>
         <div class="goal">${u.goal_text || ''}</div>
         ${alert}
+        ${mood}
         ${marks}
       </div>`;
   }).join('');
