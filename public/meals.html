@@ -1,0 +1,2489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Plan">
+<meta name="theme-color" content="#002D72">
+<title>My Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<script>
+(function(){
+  try {
+    const c=document.createElement('canvas');c.width=512;c.height=512;
+    const x=c.getContext('2d');
+    // Royal blue background with rounded rect feel
+    x.fillStyle='#002D72';
+    x.beginPath();
+    x.roundRect(0,0,512,512,80);
+    x.fill();
+    // Orange arc swoosh across top
+    x.beginPath();
+    x.arc(256,512,340,-Math.PI*1.05,-Math.PI*0.05);
+    x.strokeStyle='#FF5910';
+    x.lineWidth=28;
+    x.stroke();
+    // White MP text — large serif feel
+    x.fillStyle='#ffffff';
+    x.font='bold 200px Georgia,serif';
+    x.textAlign='center';
+    x.textBaseline='middle';
+    x.fillText('MP',256,230);
+    // Tagline
+    x.fillStyle='rgba(255,255,255,0.55)';
+    x.font='500 42px -apple-system,sans-serif';
+    x.fillText('MY PLAN',256,360);
+    // Orange dot accent
+    x.beginPath();
+    x.arc(256,430,10,0,Math.PI*2);
+    x.fillStyle='#FF5910';
+    x.fill();
+    const l=document.createElement('link');l.rel='apple-touch-icon';l.href=c.toDataURL();
+    document.head.appendChild(l);
+  } catch(e){}
+})();
+</script>
+<style>
+/* ── RESET & ROOT ─────────────────────────────── */
+:root {
+  --slate:  #ffffff;
+  --slate2: #f0f4fb;
+  --slate3: #e8eef8;
+  --slate4: #d8e2f0;
+  --border: rgba(0,45,114,0.12);
+  --border2:rgba(0,45,114,0.22);
+  --amber:  #FF5910;
+  --amber-d:rgba(255,89,16,0.10);
+  --coral:  #e03000;
+  --coral-d:rgba(224,48,0,0.10);
+  --green:  #1a8a4a;
+  --green-d:rgba(26,138,74,0.10);
+  --blue:   #002D72;
+  --blue-d: rgba(0,45,114,0.10);
+  --text:   #001A4A;
+  --text2:  #4A6080;
+  --text3:  #8A9BB0;
+  --r:      12px;
+  --rsm:    8px;
+  --nav:    56px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: #ffffff; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; }
+
+/* ── APP SHELL ────────────────────────────────── */
+/* The entire app lives in this fixed container    */
+#app {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  bottom: calc(var(--nav) + var(--safe-b));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── NAV BAR ──────────────────────────────────── */
+#nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: calc(var(--nav) + var(--safe-b));
+  background: #002D72;
+  border-top: 1px solid rgba(0,45,114,0.3);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 6px;
+  padding-bottom: var(--safe-b);
+  z-index: 200;
+}
+.nb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.55); font-family: 'DM Sans', sans-serif; font-size: 10px; letter-spacing: 0.03em; padding: 2px; transition: color 0.15s; }
+.nb.on { color: #FF5910; }
+.ni { font-size: 20px; line-height: 1; }
+
+/* ── TABS ─────────────────────────────────────── */
+/* Each tab fills #app exactly and manages its own scroll */
+.tab {
+  display: none;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tab.on { display: flex; }
+
+/* Sticky header inside a tab — never scrolls */
+.th {
+  flex-shrink: 0;
+  background: #002D72;
+  border-bottom: 1px solid rgba(0,45,114,0.2);
+  padding: calc(var(--safe-t) + 16px) 16px 12px;
+  z-index: 10;
+}
+.th h1 { font-family: 'DM Serif Display', serif; font-size: 22px; color: #ffffff; line-height: 1; }
+.th h1 span { color: #FF5910; }
+.th p { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 3px; letter-spacing: 0.04em; }
+
+/* Scrollable body inside a tab */
+.tb {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-bottom: 24px;
+}
+
+/* Sub-nav strips inside tabs (step nav, loc tabs) */
+.subnav {
+  flex-shrink: 0;
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+}
+.subnav button {
+  padding: 10px 14px; font-size: 11px; font-weight: 500; color: var(--text3);
+  background: none; border: none; cursor: pointer; letter-spacing: 0.05em;
+  text-transform: uppercase; border-bottom: 2px solid transparent;
+  white-space: nowrap; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.subnav button.on { color: var(--amber); border-bottom-color: var(--amber); }
+.subnav button.done { color: var(--green); }
+.subnav button:disabled { opacity: 0.35; cursor: default; }
+
+/* ── CARDS ────────────────────────────────────── */
+.card { background: var(--slate3); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin: 10px 16px 0; }
+.card-hd { padding: 10px 14px; background: #002D72; border-bottom: 1px solid rgba(0,45,114,0.15); display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.card-hd h3 { font-family: 'DM Serif Display', serif; font-size: 15px; color: #ffffff; flex: 1; }
+.card-bd { padding: 12px 14px; }
+.card-bd.hide { display: none; }
+
+/* ── BADGES ───────────────────────────────────── */
+.badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; }
+.b-str { background: var(--coral-d); color: var(--coral); border: 1px solid rgba(232,92,58,0.3); }
+.b-crd { background: var(--blue-d); color: var(--blue); border: 1px solid rgba(74,158,255,0.3); }
+.b-rst { background: var(--slate4); color: var(--text3); border: 1px solid var(--border); }
+.b-pr  { background: var(--coral-d); color: var(--coral); border: 1px solid rgba(232,92,58,0.3); }
+.b-it  { background: var(--blue-d); color: var(--blue); border: 1px solid rgba(74,158,255,0.3); }
+.b-wl  { background: var(--green-d); color: var(--green); border: 1px solid rgba(45,184,122,0.3); }
+.b-sm  { background: var(--amber-d); color: var(--amber); border: 1px solid rgba(232,160,32,0.3); }
+.b-exp { background: rgba(232,92,58,0.2); color: #ff8066; border: 1px solid rgba(232,92,58,0.4); }
+.b-hi  { background: rgba(74,158,255,0.15); color: var(--blue); border: 1px solid rgba(74,158,255,0.3); }
+
+/* ── SECTION HEADS ────────────────────────────── */
+.sh { font-size: 10px; font-weight: 500; color: #002D72; text-transform: uppercase; letter-spacing: 0.07em; padding: 14px 16px 6px; font-weight: 600; }
+
+/* ── BUTTONS ──────────────────────────────────── */
+.btn-p { width: 100%; padding: 13px; background: var(--amber); color: #ffffff; border: none; border-radius: var(--rsm); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; margin-top: 8px; }
+.btn-p:hover { opacity: 0.88; }
+.btn-p:disabled { opacity: 0.4; cursor: default; }
+.btn-s { padding: 9px 16px; background: #e8eef8; color: #002D72; border: 1px solid var(--border); border-radius: var(--rsm); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.btn-s:hover { border-color: var(--border2); color: var(--text); }
+.btn-sm { padding: 6px 12px; font-size: 12px; background: #e8eef8; color: #002D72; border: 1px solid var(--border); border-radius: var(--rsm); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* ── INPUTS ───────────────────────────────────── */
+.lbl { font-size: 11px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; display: block; }
+textarea, input[type=text], select, input[type=number], input[type=date] {
+  width: 100%; background: #ffffff; border: 1px solid var(--border);
+  border-radius: var(--rsm); color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; padding: 9px 12px; line-height: 1.5; transition: border-color 0.2s;
+}
+textarea { resize: vertical; min-height: 64px; }
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--border2); }
+textarea::placeholder, input::placeholder { color: var(--text3); }
+select option { background: #ffffff; color: var(--text); }
+.ig { margin-bottom: 16px; }
+
+/* ── TAG TOGGLES ──────────────────────────────── */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: var(--slate3); color: var(--text2); cursor: pointer; transition: all 0.15s; user-select: none; }
+.tag.on { background: var(--amber-d); border-color: var(--amber); color: var(--amber); }
+
+/* ── DAY TOGGLES ──────────────────────────────── */
+.day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.day-btn { padding: 7px 3px; border-radius: var(--rsm); font-size: 11px; font-weight: 500; border: 1px solid var(--border); background: var(--slate3); color: var(--text3); cursor: pointer; text-align: center; transition: all 0.15s; user-select: none; }
+.day-btn.g { background: var(--green-d); border-color: var(--green); color: var(--green); }
+.day-btn.r { background: var(--coral-d); border-color: var(--coral); color: var(--coral); }
+
+/* ── CHIPS ────────────────────────────────────── */
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.chip { padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px solid var(--border); background: var(--slate4); color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.chip.on { background: var(--amber-d); border-color: var(--amber); color: var(--amber); }
+
+/* ── SPINNER ──────────────────────────────────── */
+.spin-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; gap: 14px; }
+.spin { width: 34px; height: 34px; border: 2px solid #d8e2f0; border-top-color: #FF5910; border-radius: 50%; animation: sp 0.8s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.spin-txt { font-size: 13px; color: #4A6080; text-align: center; line-height: 1.6; }
+
+/* ── MEAL OPTIONS ─────────────────────────────── */
+.meal-opt { background: var(--slate3); border: 1px solid var(--border); border-radius: var(--r); padding: 13px; cursor: pointer; transition: all 0.18s; position: relative; margin-bottom: 8px; }
+.meal-opt:hover { border-color: var(--border2); }
+.meal-opt.on { border-color: var(--amber); background: var(--amber-d); }
+.meal-opt.on::after { content: '✓'; position: absolute; top: 10px; right: 12px; font-size: 13px; color: var(--amber); font-weight: 500; }
+.meal-name { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--text); line-height: 1.2; margin-bottom: 5px; }
+.meal-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 5px; }
+.meal-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.meal-meta { display: flex; gap: 10px; margin-top: 5px; font-size: 11px; color: var(--text3); }
+.meal-tip { margin-top: 5px; font-size: 11px; color: var(--amber); font-style: italic; }
+
+/* ── SEL BAR ──────────────────────────────────── */
+.sel-bar { flex-shrink: 0; background: var(--slate2); border-top: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sel-ct { font-size: 13px; color: var(--text2); }
+.sel-ct span { color: var(--amber); font-weight: 500; }
+
+/* ── WEEK PLAN ────────────────────────────────── */
+.day-row { background: var(--slate3); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 8px; }
+.day-rh { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #002D72; border-bottom: 1px solid rgba(0,45,114,0.15); }
+.day-lbl { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.07em; min-width: 26px; }
+.day-dn { font-family: 'DM Serif Display', serif; font-size: 14px; color: #ffffff; flex: 1; margin-left: 4px; cursor: pointer; }
+.day-dn.link { color: var(--amber); }
+.day-bd { padding: 10px 12px; }
+.meal-g { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.msl { }
+.msl-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+.msl-n { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; margin-bottom: 2px; }
+.msl-note { font-size: 11px; color: var(--text2); line-height: 1.4; }
+.mf { font-size: 10px; padding: 1px 6px; border-radius: 8px; display: inline-block; margin-top: 3px; margin-right: 3px; }
+.mf-h { background: var(--green-d); color: var(--green); }
+.mf-p { background: var(--blue-d); color: var(--blue); }
+.mf-l { background: var(--amber-d); color: var(--amber); }
+
+/* ── PREP / SHOP CARDS ────────────────────────── */
+.info-card { background: var(--slate3); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin: 8px 16px 0; }
+.info-title { font-family: 'DM Serif Display', serif; font-size: 15px; margin-bottom: 4px; }
+.info-sub { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
+.li { display: flex; gap: 8px; padding: 5px 0; align-items: flex-start; border-bottom: 1px solid var(--border); }
+.li:last-child { border-bottom: none; }
+.li-dot { width: 5px; height: 5px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.li-t { font-size: 12px; color: var(--text2); line-height: 1.5; flex: 1; }
+.li-t b { color: var(--text); font-weight: 500; }
+.li-m { font-size: 10px; color: var(--text3); white-space: nowrap; }
+
+/* ── SNACK CARDS ──────────────────────────────── */
+.snack-g { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 0 16px; }
+.snack-c { background: var(--slate4); border: 1px solid var(--border); border-radius: var(--rsm); padding: 9px 11px; }
+.snack-t { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.snack-n { font-size: 11px; color: var(--text2); line-height: 1.4; }
+
+/* ── EXERCISE LIST ────────────────────────────── */
+.ex-list { display: flex; flex-direction: column; gap: 6px; }
+.ex-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; background: var(--slate4); border-radius: var(--rsm); border: 1px solid var(--border); }
+.ex-n { flex: 1; font-size: 13px; color: var(--text); }
+.ex-n a { color: var(--amber); text-decoration: none; }
+.ex-n a:hover { text-decoration: underline; }
+.ex-d { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ── PROGRESSION ──────────────────────────────── */
+.prog-track { display: flex; gap: 6px; padding: 12px 16px; overflow-x: auto; }
+.pw { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 44px; }
+.pn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #8A9BB0; cursor: pointer; transition: all 0.15s; background: #f0f4fb; }
+.pn.cur { border-color: var(--amber); color: var(--amber); background: var(--amber-d); }
+.pn.done { border-color: var(--green); color: var(--green); background: var(--green-d); }
+.pl { font-size: 9px; color: var(--text3); text-align: center; }
+
+/* ── ALERT ────────────────────────────────────── */
+.alert { margin: 8px 16px 0; padding: 9px 12px; border-radius: var(--rsm); font-size: 12px; line-height: 1.5; border: 1px solid; }
+.a-amb { background: var(--amber-d); border-color: rgba(232,160,32,0.3); color: var(--amber); }
+.a-red { background: var(--coral-d); border-color: rgba(232,92,58,0.3); color: var(--coral); }
+.a-blu { background: var(--blue-d); border-color: rgba(74,158,255,0.3); color: var(--blue); }
+.a-grn { background: var(--green-d); border-color: rgba(45,184,122,0.3); color: var(--green); }
+
+/* ── INVENTORY ────────────────────────────────── */
+.inv-item { border-bottom: 1px solid var(--border); }
+.inv-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer; }
+.inv-row:active { background: #e8eef8; }
+.inv-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.s-g { background: var(--green); }
+.s-l { background: var(--amber); }
+.s-o { background: var(--coral); }
+.inv-name { flex: 1; font-size: 13px; color: var(--text); }
+.inv-qty { font-size: 12px; color: var(--text2); margin-right: 4px; }
+.inv-stat { font-size: 10px; color: var(--text3); padding: 2px 7px; border: 1px solid var(--border); border-radius: 10px; }
+.inv-arr { font-size: 11px; color: var(--text3); }
+.inv-edit { display: none; padding: 10px 16px 12px; border-top: 1px solid var(--border); background: #f0f4fb; }
+.inv-edit.open { display: block; }
+.inv-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.inv-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.inv-actions { display: flex; gap: 7px; margin-top: 10px; }
+.inv-save { flex: 1; padding: 8px; background: var(--amber); color: #ffffff; border: none; border-radius: var(--rsm); font-size: 13px; font-weight: 500; cursor: pointer; }
+.inv-cancel { padding: 8px 14px; background: var(--slate3); color: var(--text2); border: 1px solid var(--border); border-radius: var(--rsm); font-size: 13px; cursor: pointer; }
+.inv-del { padding: 8px 14px; background: var(--coral-d); color: var(--coral); border: 1px solid rgba(232,92,58,0.3); border-radius: var(--rsm); font-size: 13px; cursor: pointer; }
+.inv-loc-head { padding: 10px 16px 4px; font-size: 10px; font-weight: 600; color: #002D72; text-transform: uppercase; letter-spacing: 0.07em; background: #f0f4fb; border-bottom: 1px solid var(--border); }
+.add-form-wrap { flex-shrink: 0; padding: 8px 16px; border-bottom: 1px solid var(--border); background: #ffffff; }
+.add-form-inner { background: var(--slate3); border: 1px solid var(--border); border-radius: var(--r); padding: 12px; margin-top: 8px; }
+
+/* ── LOG ──────────────────────────────────────── */
+.log-entry { background: #f0f4fb; border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin: 8px 16px 0; }
+.log-date { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.log-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.log-lbl { font-size: 12px; color: var(--text2); flex: 1; }
+.log-val { font-size: 12px; color: var(--text); font-weight: 500; }
+.stars { display: flex; gap: 4px; }
+.star { font-size: 20px; cursor: pointer; color: var(--text3); user-select: none; transition: color 0.1s; }
+.star.on { color: var(--amber); }
+.toggle-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.toggle-lbl { font-size: 13px; color: var(--text2); flex: 1; }
+.tog { width: 42px; height: 24px; border-radius: 12px; background: #d8e2f0; border: 1px solid var(--border); cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+.tog.on { background: var(--green); border-color: var(--green); }
+.tog-k { width: 18px; height: 18px; border-radius: 50%; background: #8A9BB0; position: absolute; top: 2px; left: 2px; transition: all 0.2s; pointer-events: none; }
+.tog.on .tog-k { left: 20px; background: white; }
+
+/* ── MODAL ────────────────────────────────────── */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 300; display: none; align-items: flex-end; }
+.modal-bg.open { display: flex; }
+.modal { background: #ffffff; border-radius: 20px 20px 0 0; width: 100%; max-height: 88vh; display: flex; flex-direction: column; }
+.modal-hd { flex-shrink: 0; padding: 12px 16px 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--text); flex: 1; }
+.modal-close { background: none; border: none; color: var(--text3); font-size: 22px; cursor: pointer; padding: 0 4px; }
+.modal-handle { width: 36px; height: 4px; border-radius: 2px; background: #d8e2f0; margin: 10px auto 0; flex-shrink: 0; }
+.modal-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 16px calc(var(--safe-b) + 20px); }
+.rec-sec { margin-bottom: 16px; }
+.rec-sec-t { font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+.ing { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.ing:last-child { border-bottom: none; }
+.ing-amt { color: var(--amber); min-width: 60px; font-weight: 500; font-size: 12px; }
+.ing-n { color: var(--text); flex: 1; }
+.step { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.step:last-child { border-bottom: none; }
+.step-n { width: 22px; height: 22px; border-radius: 50%; background: var(--amber-d); border: 1px solid rgba(232,160,32,0.3); color: var(--amber); font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.step-t { font-size: 13px; color: var(--text2); line-height: 1.5; flex: 1; }
+.step-tip { margin: 8px 0; padding: 9px 12px; background: var(--amber-d); border-left: 3px solid var(--amber); font-size: 12px; color: var(--amber); font-style: italic; }
+
+/* ── SPLASH ───────────────────────────────────── */
+#splash { position: fixed; inset: 0; background: #002D72; z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; transition: opacity 0.4s; }
+.splash-icon { width: 80px; height: 80px; border-radius: 20px; background: rgba(255,255,255,0.15); border: 2px solid #FF5910; display: flex; align-items: center; justify-content: center; }
+.splash-icon span { font-family: 'DM Serif Display', serif; font-size: 28px; color: #FF5910; }
+.splash-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: #ffffff; }
+.splash-title em { color: var(--amber); font-style: normal; }
+.splash-sub { font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* ── ERROR ────────────────────────────────────── */
+.err { background: var(--coral-d); border: 1px solid var(--coral); border-radius: var(--rsm); padding: 11px 13px; font-size: 13px; color: var(--coral); margin: 10px 0; }
+.divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ── HABIT CARDS ──────────────────────────────── */
+.hcard { border-radius: var(--r); padding: 14px 12px; cursor: pointer; user-select: none; transition: all 0.2s; position: relative; min-height: 90px; display: flex; flex-direction: column; justify-content: space-between; -webkit-tap-highlight-color: transparent; }
+.hcard:active { transform: scale(0.96); }
+.hcard.done { opacity: 0.55; }
+.hcard-icon { font-size: 22px; line-height: 1; margin-bottom: 6px; }
+.hcard-name { font-size: 13px; font-weight: 500; color: #ffffff; line-height: 1.2; }
+.hcard-prog { font-size: 11px; margin-top: 4px; }
+.hcard-check { position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.2s; }
+.hcard.done .hcard-check { background: rgba(255,255,255,0.25); border-color: transparent; }
+/* habit colors matching Habit app palette */
+.hc-purple { background: #002D72; }
+.hc-olive  { background: #003DA5; }
+.hc-dkgreen{ background: #001A4A; }
+.hc-brown  { background: #FF5910; }
+.hc-teal   { background: #002D72; }
+.hc-water  { background: #003DA5; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-icon"><span>MP</span></div>
+  <div class="splash-title">My <em>Plan</em></div>
+  <div class="splash-sub">Fitness · Diet · Inventory</div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+
+  <!-- ══ TAB 1: TODAY ══════════════════════════ -->
+  <div class="tab on" id="t-today">
+    <div class="th">
+      <h1>Good <span id="greet">morning</span></h1>
+      <p id="today-date"></p>
+    </div>
+    <div class="tb" id="today-body">
+      <!-- rendered by JS -->
+    </div>
+    <!-- Habit FAB — always visible on Today tab -->
+    <button id="habit-fab" onclick="openHabits()" title="Daily habits" style="position:absolute;bottom:16px;right:16px;width:50px;height:50px;border-radius:50%;background:var(--amber);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 20px rgba(232,160,32,0.45);z-index:50;transition:transform 0.15s;">✓</button>
+  </div>
+
+  <!-- ══ TAB 2: NEXT WEEK ══════════════════════ -->
+  <div class="tab" id="t-plan">
+    <div class="th">
+      <h1>Next <span>Week</span></h1>
+      <p id="next-week-range"></p>
+    </div>
+    <div class="subnav">
+      <button class="on" id="pn1" onclick="goPlan(1)">1 · Check-in</button>
+      <button id="pn2" onclick="goPlan(2)" disabled>2 · Pick 5</button>
+      <button id="pn3" onclick="goPlan(3)" disabled>3 · Your week</button>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="tb" id="ps1" style="display:flex;flex-direction:column;">
+      <div style="padding:16px;">
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:4px;">Friday check-in</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5;">Answer these 4 questions and I'll generate 10 meal options built around what you actually have.</div>
+
+        <div class="ig">
+          <label class="lbl">1. Anything that needs to be used before it spoils?</label>
+          <textarea id="p-exp" placeholder="e.g. chicken thighs defrosted, avocados getting soft, spinach going..."></textarea>
+          <div class="chips" id="exp-chips">
+            <div class="chip" onclick="chip(this,'p-exp','chicken thighs')">chicken thighs</div>
+            <div class="chip" onclick="chip(this,'p-exp','shrimp (defrosted)')">shrimp</div>
+            <div class="chip" onclick="chip(this,'p-exp','avocados')">avocados</div>
+            <div class="chip" onclick="chip(this,'p-exp','ground beef')">ground beef</div>
+            <div class="chip" onclick="chip(this,'p-exp','pork chops')">pork chops</div>
+            <div class="chip" onclick="chip(this,'p-exp','tilapia')">tilapia</div>
+            <div class="chip" onclick="chip(this,'p-exp','eggs')">eggs</div>
+            <div class="chip" onclick="chip(this,'p-exp','spinach')">spinach</div>
+          </div>
+        </div>
+
+        <div class="ig">
+          <label class="lbl">2. Anything you're craving to eat or cook this week?</label>
+          <div class="tags" id="crav-tags">
+            <div class="tag" onclick="this.classList.toggle('on')">Puerto Rican</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Italian pasta</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Garlic shrimp</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Crispy chicken</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Fish</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Butter chicken</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Something light</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Rice dish</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Eggs</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Steak</div>
+            <div class="tag" onclick="this.classList.toggle('on')">World cuisine</div>
+            <div class="tag" onclick="this.classList.toggle('on')">Comfort food</div>
+          </div>
+        </div>
+
+        <div class="ig">
+          <label class="lbl">3. How many nights do you need meals for this week?</label>
+          <div class="tags" id="nights-tags">
+            <div class="tag" onclick="selNights(this)" data-n="3">3 nights</div>
+            <div class="tag" onclick="selNights(this)" data-n="4">4 nights</div>
+            <div class="tag on" onclick="selNights(this)" data-n="5">5 nights</div>
+            <div class="tag" onclick="selNights(this)" data-n="6">6 nights</div>
+            <div class="tag" onclick="selNights(this)" data-n="7">7 nights</div>
+          </div>
+        </div>
+
+        <div class="ig">
+          <label class="lbl">4. How much time do you want to spend cooking per meal this week?</label>
+          <div class="tags" id="time-tags">
+            <div class="tag" onclick="selTime(this)" data-t="under 20 min">Under 20 min — quick only</div>
+            <div class="tag on" onclick="selTime(this)" data-t="20–30 min">20–30 min — my sweet spot</div>
+            <div class="tag" onclick="selTime(this)" data-t="up to 45 min hands-off">45 min if mostly hands-off</div>
+            <div class="tag" onclick="selTime(this)" data-t="anything">Open — no limit</div>
+          </div>
+        </div>
+
+        <div class="ig">
+          <label class="lbl">Anything else I should know?</label>
+          <textarea id="p-notes" placeholder="e.g. low energy week, want to try something new, have a big event Saturday..." style="min-height:48px;"></textarea>
+        </div>
+
+        <button class="btn-p" onclick="genMeals()">Generate my 10 meal options →</button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="tb" id="ps2" style="display:none;flex-direction:column;">
+      <div id="ps2-content" style="padding:14px 16px 80px;"></div>
+    </div>
+    <div class="sel-bar" id="sel-bar" style="display:none;">
+      <div class="sel-ct">Selected: <span id="sel-ct">0</span> / 5</div>
+      <button class="btn-p" id="build-btn" onclick="buildWeek()" disabled style="width:auto;margin:0;padding:10px 18px;font-size:13px;">Build my week →</button>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="tb" id="ps3" style="display:none;">
+      <div id="ps3-content" style="padding:14px 16px;"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 3: WORKOUT ════════════════════════ -->
+  <div class="tab" id="t-workout">
+    <div class="th">
+      <h1>Workout <span>Plan</span></h1>
+      <p>M–F · 25 lb kettlebell + walking pad</p>
+    </div>
+    <div class="tb">
+      <div class="alert a-amb" style="margin:10px 16px 0;">
+        <b>Adzenys timing:</b> Take dose → wait 30–45 min → work out. Eat something small first even if not hungry.
+      </div>
+      <div class="sh">8-WEEK PROGRESSION</div>
+      <div class="prog-track" id="prog-track"></div>
+      <div class="card" style="margin-top:6px;">
+        <div class="card-bd" id="prog-detail"></div>
+      </div>
+      <div id="wo-days"></div>
+      <div class="sh">DAILY 10-MIN FIX (EVERY DAY)</div>
+      <div class="card">
+        <div class="card-bd">
+          <div class="ex-list" id="fix-list"></div>
+        </div>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 4: INVENTORY ══════════════════════ -->
+  <div class="tab" id="t-inventory">
+    <div class="th">
+      <h1>Inven<span>tory</span></h1>
+      <p>Tap row to edit · <span style="color:var(--green);">●</span> good &nbsp;<span style="color:var(--amber);">●</span> low &nbsp;<span style="color:var(--coral);">●</span> out</p>
+    </div>
+    <!-- Location filter tabs -->
+    <div class="subnav" id="loc-nav">
+      <button class="on" onclick="showLoc('all')" data-loc="all">All</button>
+      <button onclick="showLoc('fridge')" data-loc="fridge">Fridge</button>
+      <button onclick="showLoc('freezer')" data-loc="freezer">Freezer</button>
+      <button onclick="showLoc('counter')" data-loc="counter">Counter</button>
+      <button onclick="showLoc('pantry')" data-loc="pantry">Pantry</button>
+      <button onclick="showLoc('cabinets')" data-loc="cabinets">Cabinets</button>
+    </div>
+    <!-- Add item (always visible, above the scroll) -->
+    <div class="add-form-wrap">
+      <button class="btn-sm" id="add-tog" onclick="toggleAdd()" style="width:100%;text-align:center;">+ Add item</button>
+      <div id="add-form" style="display:none;margin-top:8px;background:var(--slate3);border:1px solid var(--border);border-radius:var(--r);padding:12px;">
+        <div class="ig" style="margin-bottom:8px;">
+          <div class="inv-lbl">Item name</div>
+          <input type="text" id="ni-name" placeholder="e.g. chicken thighs">
+        </div>
+        <div class="inv-2col" style="margin-bottom:8px;">
+          <div>
+            <div class="inv-lbl">Quantity</div>
+            <input type="text" id="ni-qty" placeholder="e.g. 2 lbs">
+          </div>
+          <div>
+            <div class="inv-lbl">Status</div>
+            <select id="ni-stat">
+              <option value="good">Good</option>
+              <option value="low">Low</option>
+              <option value="out">Out</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <div class="inv-lbl">Location</div>
+          <select id="ni-loc">
+            <option value="fridge">Fridge</option>
+            <option value="freezer">Freezer</option>
+            <option value="counter">Counter</option>
+            <option value="pantry">Pantry</option>
+            <option value="cabinets">Cabinets</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="inv-save" onclick="addItem()">Add item</button>
+          <button class="inv-cancel" onclick="toggleAdd()">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- Scrollable inventory list -->
+    <div class="tb" id="inv-list">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ══ TAB 5: LOG ════════════════════════════ -->
+  <div class="tab" id="t-log">
+    <div class="th">
+      <h1>Daily <span>Log</span></h1>
+      <p id="log-date"></p>
+    </div>
+    <div class="tb">
+      <div style="padding:14px 16px 0;">
+        <div style="font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:12px;">Today's check-in</div>
+
+        <div class="toggle-row">
+          <span class="toggle-lbl">Worked out today?</span>
+          <div class="tog" id="wo-tog" onclick="togWo()"><div class="tog-k"></div></div>
+        </div>
+
+        <div id="wo-detail" style="display:none;margin-top:10px;">
+          <label class="lbl">Which exercises?</label>
+          <div id="ex-check" style="display:flex;flex-direction:column;gap:5px;margin-bottom:12px;"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label class="lbl">How did you feel today? (1–5)</label>
+          <div class="stars" id="feel-stars" style="margin-bottom:12px;"></div>
+        </div>
+
+        <div>
+          <label class="lbl">Rate tonight's dinner</label>
+          <div class="stars" id="meal-stars" style="margin-bottom:8px;"></div>
+          <textarea id="meal-notes" placeholder="Notes on the meal — what worked, what to change?" style="min-height:52px;"></textarea>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label class="lbl">Anything run out? (updates inventory)</label>
+          <div id="inv-check" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+        </div>
+
+        <button class="btn-p" onclick="saveLog()">Save today's log</button>
+        <div id="log-saved" style="display:none;text-align:center;padding:10px;font-size:13px;color:var(--green);">Saved ✓</div>
+      </div>
+
+      <div class="sh">RECENT LOG</div>
+      <div id="log-hist"></div>
+
+      <!-- BACKUP SECTION -->
+      <div class="sh">DATA BACKUP</div>
+      <div style="margin:0 16px 8px;background:#f0f4fb;border:1px solid var(--border);border-radius:var(--r);padding:14px;">
+        <div style="font-size:13px;color:var(--text);font-weight:500;margin-bottom:4px;">Back up before updating the app</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px;">Export saves all your data — inventory, logs, weights, meal plans — to a file. Import it after any update to restore everything.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button onclick="exportData()" style="padding:11px;background:#002D72;color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ Export</button>
+          <button onclick="document.getElementById('import-file').click()" style="padding:11px;background:#ffffff;color:#002D72;border:2px solid #002D72;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">⬆ Import</button>
+        </div>
+        <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
+        <div id="backup-status" style="display:none;margin-top:8px;font-size:12px;text-align:center;padding:6px;border-radius:var(--rsm);"></div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text3);">Last auto-save: <span id="last-backup-time">never</span></div>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+  </div>
+
+
+  <!-- ══ TAB 6: WEIGHT ════════════════════════ -->
+  <div class="tab" id="t-weight">
+    <div class="th">
+      <h1>Weight <span>Tracker</span></h1>
+      <p>Weekly weigh-in · lbs · progress over time</p>
+    </div>
+    <div class="tb">
+      <!-- Log new entry -->
+      <div style="padding:16px 16px 0;">
+        <div style="font-family:'DM Serif Display',serif;font-size:16px;margin-bottom:6px;">Log weight</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">Defaults to today — change the date to back-fill entries.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <label class="lbl">Date</label>
+            <input type="date" id="w-date" style="padding:10px 12px;font-size:14px;">
+          </div>
+          <div>
+            <label class="lbl">Weight (lbs)</label>
+            <input type="number" id="w-input" placeholder="e.g. 215.4" step="0.1" style="font-size:16px;padding:10px 12px;">
+          </div>
+        </div>
+        <button class="btn-p" onclick="logWeight()" style="margin-top:0;">Log it</button>
+        <div id="w-saved" style="display:none;font-size:13px;color:var(--green);padding:6px 0;">Saved ✓</div>
+      </div>
+
+      <!-- Stats row -->
+      <div id="w-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 16px 0;"></div>
+
+      <!-- Chart -->
+      <div style="padding:12px 16px 0;">
+        <div class="sh" style="padding:0 0 6px;">PROGRESS</div>
+        <div style="position:relative;height:200px;background:var(--slate3);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;">
+          <canvas id="w-chart" style="width:100%;height:100%;"></canvas>
+          <div id="w-chart-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--text3);">Log a few entries to see your trend</div>
+        </div>
+      </div>
+
+      <!-- History table -->
+      <div style="padding:12px 16px 0;">
+        <div class="sh" style="padding:0 0 6px;">LOG</div>
+        <div id="w-history" style="background:var(--slate3);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;"></div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+<!-- BOTTOM NAV -->
+<div id="nav">
+  <button class="nb on" onclick="showTab('today')" id="nb-today"><span class="ni">☀</span>Today</button>
+  <button class="nb" onclick="showTab('plan')" id="nb-plan"><span class="ni">📅</span><span id="plan-lbl">Next Week</span></button>
+  <button class="nb" onclick="showTab('workout')" id="nb-workout"><span class="ni">🏋</span>Workout</button>
+  <button class="nb" onclick="showTab('inventory')" id="nb-inventory"><span class="ni">🛒</span>Inventory</button>
+  <button class="nb" onclick="showTab('log')" id="nb-log"><span class="ni">📋</span>Log</button>
+  <button class="nb" onclick="showTab('weight')" id="nb-weight"><span class="ni">⚖</span>Weight</button>
+</div>
+
+<!-- HABIT MODAL -->
+<div class="modal-bg" id="habit-bg">
+  <div class="modal" style="border-radius:20px 20px 0 0;max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div style="flex-shrink:0;padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);">Daily habits</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="habit-date"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <!-- Progress ring -->
+        <div style="position:relative;width:48px;height:48px;">
+          <svg width="48" height="48" style="transform:rotate(-90deg);">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="var(--border)" stroke-width="3"/>
+            <circle cx="24" cy="24" r="20" fill="none" stroke="var(--amber)" stroke-width="3"
+              stroke-dasharray="125.66" id="habit-ring"
+              stroke-dashoffset="125.66" stroke-linecap="round" style="transition:stroke-dashoffset 0.4s ease;"/>
+          </svg>
+          <div id="habit-ring-txt" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--amber);">0/4</div>
+        </div>
+        <button onclick="closeHabits()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+      </div>
+    </div>
+    <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="habit-cards">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- SWAP MODAL -->
+<div class="modal-bg" id="swap-bg" onclick="closeSwapModal(event)">
+  <div class="modal" style="border-radius:20px 20px 0 0;">
+    <div class="modal-handle"></div>
+    <div style="flex-shrink:0;padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);">Swap dinner</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="swap-day-label"></div>
+      </div>
+      <button onclick="closeSwapModal()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;padding:0 4px;">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;" id="swap-body">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- RECIPE MODAL -->
+<div class="modal-bg" id="recipe-bg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-hd">
+      <div class="modal-title" id="rec-title"></div>
+      <div id="rec-badge"></div>
+      <button class="modal-close" onclick="closeRecipe()">✕</button>
+    </div>
+    <div class="modal-body" id="rec-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════ CONSTANTS ═══════════════════════════════
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+const WO = {
+  Mon:{type:'Strength A',lbl:'strength',ex:[
+    {n:'Kettlebell swing',s:'6–8 rounds',r:'10 reps',rest:'45–60s',url:'https://www.youtube.com/watch?v=sSESeQAir2M'},
+    {n:'Goblet squat',s:'3 sets',r:'8 reps',rest:'60s',url:'https://www.youtube.com/watch?v=MeIiIdhvXT4'},
+    {n:'One-arm row',s:'3 sets',r:'10/side',rest:'60s',url:'https://www.youtube.com/watch?v=dFzUjzfih7k'},
+    {n:'Suitcase carry',s:'2 sets',r:'45s/side',rest:'45s',url:'https://www.youtube.com/watch?v=DnSqBKm_GFo'},
+    {n:'Dead bug',s:'2 sets',r:'6/side',rest:'30s',url:'https://www.youtube.com/watch?v=4XLEnwUr1d8'},
+  ]},
+  Tue:{type:'Intervals',lbl:'cardio',ex:[
+    {n:'Warm-up walk',s:'',r:'3 min @ 2.6 mph',rest:'',url:''},
+    {n:'Intervals',s:'7–10 rounds',r:'1 min hard @ 3.6–3.9 / 1 min easy @ 2.6',rest:'',url:'https://www.youtube.com/watch?v=vc1E5CfRfos'},
+    {n:'Cool-down',s:'',r:'3 min @ 2.4 mph',rest:'',url:''},
+  ]},
+  Wed:{type:'Zone 2',lbl:'cardio',ex:[
+    {n:'Steady incline walk',s:'20–30 min',r:'Incline 3% · 2.8–3.3 mph · talkable pace',rest:'',url:'https://www.youtube.com/watch?v=vc1E5CfRfos'},
+  ]},
+  Thu:{type:'Strength B',lbl:'strength',ex:[
+    {n:'Suitcase deadlift',s:'3 sets',r:'8/side',rest:'60s',url:'https://www.youtube.com/watch?v=WCFCdxzFBa4'},
+    {n:'Push-ups',s:'3 sets',r:'6–10 (incline ok)',rest:'60s',url:'https://www.youtube.com/watch?v=IODxDxX7oi4'},
+    {n:'One-arm row',s:'3 sets',r:'10/side',rest:'60s',url:'https://www.youtube.com/watch?v=dFzUjzfih7k'},
+    {n:'Band pull-aparts',s:'2 sets',r:'15 reps',rest:'30s',url:'https://www.youtube.com/watch?v=9YRWwh-FkM8'},
+    {n:'Side plank',s:'2 sets',r:'20–30s/side',rest:'30s',url:'https://www.youtube.com/watch?v=K2KQLZVfEAE'},
+  ]},
+  Fri:{type:'Choice',lbl:'cardio',ex:[
+    {n:'Option A — Intervals',s:'',r:'Same as Tuesday',rest:'',url:'https://www.youtube.com/watch?v=vc1E5CfRfos'},
+    {n:'Option B — Zone 2',s:'',r:'Same as Wednesday',rest:'',url:'https://www.youtube.com/watch?v=vc1E5CfRfos'},
+  ]},
+  Sat:{type:'Rest / Walk',lbl:'rest',ex:[]},
+  Sun:{type:'Active Rest',lbl:'rest',ex:[]},
+};
+
+const FIX = [
+  {n:'Glute bridge',r:'15 reps',url:'https://www.youtube.com/watch?v=wPM8icPu6H8'},
+  {n:'Dead bug',r:'6/side',url:'https://www.youtube.com/watch?v=4XLEnwUr1d8'},
+  {n:'Wall slides',r:'10 reps',url:'https://www.youtube.com/watch?v=qFBFuEkujGk'},
+  {n:'Hip flexor stretch',r:'30s/side',url:'https://www.youtube.com/watch?v=YqF6pLnGF90'},
+];
+
+const PROG = [
+  {w:1,d:'Do it as written. Focus on form, not speed.'},
+  {w:2,d:'Same as week 1. Nail every rep. Consistency beats intensity.'},
+  {w:3,d:'Add +1 rep per set across all strength exercises.'},
+  {w:4,d:'Same as week 3. Maintain the extra rep.'},
+  {w:5,d:'Drop rest by 10–15s. Or slow eccentric to 3s down.'},
+  {w:6,d:'Same as week 5. Push the shorter rest windows.'},
+  {w:7,d:'Switch KB swings to single-arm. Dramatically harder, same weight.'},
+  {w:8,d:'Single-arm swings. Consider a 35 lb kettlebell for week 9.'},
+];
+
+const RECIPES = {
+  'Pollo guisado':{c:'pr',time:'45 min',active:'20 min',
+    ing:[{a:'6',n:'Chicken thighs (bone-in)'},{a:'3 tbsp',n:'Sofrito (Goya)'},{a:'1 pkt',n:'Sazón'},{a:'1 tsp',n:'Adobo'},{a:'1 cup',n:'Tomato sauce'},{a:'1 cup',n:'Chicken broth'},{a:'2',n:'Potatoes, cubed'},{a:'¼ cup',n:'Green olives'},{a:'2 tbsp',n:'EVOO'},{a:'1 tsp',n:'Oregano'}],
+    tip:'The #1 mistake is too much heat. Low and slow after the sear is everything.',
+    steps:['Season chicken with adobo. Rest 10 min.','Heat EVOO in Dutch oven, medium-high. Sear skin-down 5 min until golden. Flip 3 min. Remove.','Add sofrito to same pot. Cook 2 min.','Add sazón, oregano, tomato sauce, broth. Stir.','Return chicken. Add potatoes and olives.','Cover. Simmer LOW 25–30 min. Never above medium-low.','FoodSaver her portion before you sit down.']},
+  'Shrimp aglio e olio':{c:'it',time:'25 min',active:'20 min',
+    ing:[{a:'1 lb',n:'Frozen shrimp (thawed)'},{a:'6',n:'Garlic cloves, thin sliced'},{a:'¼ cup',n:'EVOO'},{a:'½ tsp',n:'Red pepper flakes'},{a:'½ lb',n:'Spaghetti'},{a:'¼ cup',n:'Pasta water (reserved)'},{a:'1',n:'Lemon, juiced'},{a:'handful',n:'Fresh parsley'},{a:'handful',n:'Baby spinach (optional)'}],
+    tip:"Pasta water is the sauce — don't skip it. Don't let the garlic burn or it turns bitter.",
+    steps:['Cook spaghetti. RESERVE ¼ cup pasta water before draining.','Pat shrimp completely dry — critical for a good sear.','Heat EVOO medium-low. Add garlic. Cook 3–4 min until golden, NOT brown.','Turn heat to medium-high. Add pepper flakes and shrimp. Cook 2 min/side. Remove shrimp.','Add pasta + pasta water to pan. Toss to coat.','Return shrimp, add lemon, parsley, spinach. Toss 1 min.','Taste and adjust salt. Serve immediately.']},
+  'Chuletas al sartén':{c:'pr',time:'20 min',active:'15 min',
+    ing:[{a:'3',n:'Thin-cut pork chops'},{a:'1 tsp',n:'Adobo'},{a:'1 tsp',n:'Sazón'},{a:'½ tsp',n:'Garlic powder'},{a:'½ tsp',n:'Oregano'},{a:'1 tbsp',n:'Red wine vinegar'},{a:'1 tbsp',n:'EVOO'}],
+    tip:'High heat, no moving. The crust forms from contact — lift them and you lose it.',
+    steps:['Mix adobo, sazón, garlic powder, oregano, vinegar into a paste. Rub all over chops.','Marinate at least 30 min (up to 24 hrs).','Heat cast iron or carbon steel over HIGH until smoking.','Add EVOO. Place chops. DO NOT MOVE for 3 min.','Flip once. Cook 2–3 min. Internal temp 145°F.','Rest 3 min before serving.']},
+  'Camarones al ajillo':{c:'pr',time:'15 min',active:'12 min',
+    ing:[{a:'1 lb',n:'Argentia red shrimp (thawed)'},{a:'8',n:'Garlic cloves, sliced thin'},{a:'¼ cup',n:'EVOO'},{a:'½ tsp',n:'Red pepper flakes'},{a:'1',n:'Lime, juiced'},{a:'2 tbsp',n:'Fresh parsley'},{a:'to taste',n:'Salt + black pepper'}],
+    tip:'Dry shrimp = caramelized. Wet shrimp = steamed mush. Pat dry every time.',
+    steps:['Pat shrimp completely dry.','Heat EVOO medium. Add garlic. Cook 3 min until golden.','Turn heat to high. Add shrimp single layer. 90 sec, flip, 90 sec.','Off heat. Add lime juice and parsley. Toss.','Serve over rice or with air fryer tostones.']},
+  'Arroz con pollo':{c:'pr',time:'65 min',active:'20 min',
+    ing:[{a:'6',n:'Chicken thighs'},{a:'3 tbsp',n:'Sofrito'},{a:'2 pkts',n:'Sazón'},{a:'1 tsp',n:'Adobo'},{a:'2 cups',n:'Jasmine rice'},{a:'3 cups',n:'Chicken broth'},{a:'1 can',n:'Gandules (drained)'},{a:'¼ cup',n:'Green olives'},{a:'½ cup',n:'Frozen peas'},{a:'1',n:'Red pepper, diced'},{a:'2 tbsp',n:'EVOO'}],
+    tip:"325°F and don't peek. Every time you open the lid, steam escapes and the rice dries out.",
+    steps:['Season chicken with adobo. Sear Dutch oven medium-high, skin-down 5 min. Remove.','Sofrito + red pepper in same pot, 2 min. Add sazón, stir 1 min.','Add rice. Stir to coat 1 min.','Add broth, gandules, olives. Bring to boil. Place chicken skin-up on top.','Cover. Oven at 325°F for 45 min. DO NOT OPEN LID.','Remove. Add frozen peas on top, cover 5 more min.','Fluff. FoodSaver her portion.']},
+  'Arroz con gandules':{c:'pr',time:'35 min',active:'10 min',
+    ing:[{a:'2 cups',n:'Jasmine rice'},{a:'1 can',n:'Gandules, drained'},{a:'3 tbsp',n:'Sofrito'},{a:'2 pkts',n:'Sazón'},{a:'1 tbsp',n:'EVOO'},{a:'2½ cups',n:'Water or chicken broth'},{a:'¼ cup',n:'Green olives'},{a:'1 tbsp',n:'Tomato sauce'}],
+    tip:"The sofrito base before the rice goes in is the whole flavor — don't skip it.",
+    steps:['Heat EVOO medium. Add sofrito, cook 2 min.','Add sazón and tomato sauce, stir 1 min.','Add rice. Stir to coat. Toast 1–2 min.','Add gandules, olives, liquid. Bring to boil.','Lowest heat. Cover. Cook 20 min — no peeking.','Remove from heat, covered 5 min. Fluff.']},
+  'KFI butter chicken drumsticks':{c:'world',time:'45 min',active:'12 min',
+    ing:[{a:'6',n:'Chicken drumsticks'},{a:'1 jar',n:'KFI butter chicken sauce'},{a:'1 tsp',n:'Cumin'},{a:'½ tsp',n:'Salt'},{a:'1 tbsp',n:'EVOO'}],
+    tip:"Score the drumsticks — it's not optional, it's what gets the sauce into the meat.",
+    steps:['Score drumsticks 2–3 times with knife.','Season with salt and cumin.','Heat EVOO Dutch oven medium-high. Sear all sides 4–5 min.','Pour full jar KFI sauce over drumsticks. Stir to coat.','Cover. Medium-low. Simmer 25–30 min.','Serve over jasmine rice. FoodSaver her portion — she loves this.']},
+  'Aldi Mediterranean salmon':{c:'world',time:'25 min',active:'5 min',
+    ing:[{a:'1',n:'Aldi Mediterranean salmon (frozen)'},{a:'1 bag',n:'Green beans'},{a:'1 tbsp',n:'EVOO'},{a:'½ tsp',n:'Garlic powder'},{a:'to taste',n:'Salt + pepper'}],
+    tip:'Two timers. Green beans need higher heat and slightly longer. Put them in 2 min before the salmon.',
+    steps:['Thaw salmon in fridge AM (or cold water 30 min).','Preheat oven to 400°F.','Green beans: EVOO + garlic powder + salt. Sheet pan, SINGLE LAYER.','Green beans in at 425°F — timer 15 min. Salmon in at 400°F — timer 12–14 min.','Both finish together. Salmon done when it flakes easily.']},
+  'Pan-seared chicken thighs':{c:'simple',time:'30 min',active:'25 min',
+    ing:[{a:'4',n:'Chicken thighs (bone-in, skin-on)'},{a:'1 tsp',n:'Adobo'},{a:'1 tsp',n:'Paprika'},{a:'½ tsp',n:'Garlic powder'},{a:'½ tsp',n:'Black pepper'},{a:'1 tbsp',n:'EVOO'}],
+    tip:'The 8-minute skin-down rule is non-negotiable. Move them early and you lose the crust.',
+    steps:['Pat thighs completely dry — critical for crispy skin.','Mix adobo, paprika, garlic powder, pepper. Season both sides.','Heat oven-safe pan (cast iron) medium-high. Add EVOO.','Thighs SKIN-DOWN. DO NOT MOVE for 8 min.','Flip once. Cook 4 min on meat side.','Transfer pan to 400°F oven for 10 min.','Rest 3 min. Internal temp 165°F.']},
+};
+
+const DEFAULT_INV = [
+  {id:1,n:'Chicken thighs (defrosted)',q:'4 pcs',loc:'fridge',s:'good'},
+  {id:2,n:'Ground beef (defrosted)',q:'1 lb',loc:'fridge',s:'good'},
+  {id:3,n:'Boneless pork chop',q:'1',loc:'fridge',s:'good'},
+  {id:4,n:'Beef bacon',q:'1 pack',loc:'fridge',s:'good'},
+  {id:5,n:'Turkey bacon',q:'1 pack',loc:'fridge',s:'good'},
+  {id:6,n:'Deli turkey',q:'½ lb',loc:'fridge',s:'good'},
+  {id:7,n:'Deli ham',q:'½ lb',loc:'fridge',s:'good'},
+  {id:8,n:'Eggs',q:'12',loc:'fridge',s:'good'},
+  {id:9,n:'Milk',q:'2 gallons',loc:'fridge',s:'good'},
+  {id:10,n:'Butter (spreadable)',q:'1 tub',loc:'fridge',s:'good'},
+  {id:11,n:'Pepper jack slices',q:'1 pack',loc:'fridge',s:'good'},
+  {id:12,n:'Swiss slices',q:'1 pack',loc:'fridge',s:'good'},
+  {id:13,n:'American cheese',q:'1 pack',loc:'fridge',s:'good'},
+  {id:14,n:'Goya sofrito',q:'1 large tub',loc:'fridge',s:'good'},
+  {id:15,n:'Avocados',q:'4',loc:'fridge',s:'good'},
+  {id:16,n:'Green beans',q:'1 bag',loc:'fridge',s:'good'},
+  {id:17,n:'Spinach / arugula',q:'1 pack',loc:'fridge',s:'good'},
+  {id:18,n:'Dill (fresh)',q:'some',loc:'fridge',s:'good'},
+  {id:19,n:'Parsley (fresh)',q:'some',loc:'fridge',s:'good'},
+  {id:20,n:'Garlic cloves (peeled)',q:'1 bag',loc:'fridge',s:'good'},
+  {id:21,n:'Red grapes',q:'Costco size',loc:'fridge',s:'good'},
+  {id:22,n:'Green grapes',q:'Costco size',loc:'fridge',s:'good'},
+  {id:23,n:'Strawberries',q:'Costco size',loc:'fridge',s:'good'},
+  {id:24,n:'Chicken broth',q:'1 carton',loc:'fridge',s:'good'},
+  {id:25,n:'Lime juice',q:'1 bottle',loc:'fridge',s:'good'},
+  {id:26,n:'Lemon juice',q:'1 bottle',loc:'fridge',s:'good'},
+  {id:27,n:'Parmesan (grated)',q:'1 shaker',loc:'fridge',s:'good'},
+  {id:28,n:'Shrimp cocktail tray',q:'1',loc:'fridge',s:'good'},
+  {id:29,n:'Chicken thighs (Kirkland)',q:'3 packs (~12)',loc:'freezer',s:'good'},
+  {id:30,n:'Chicken drumsticks (Kirkland)',q:'5 packs (~25)',loc:'freezer',s:'good'},
+  {id:31,n:'Tilapia loins',q:'4 loins',loc:'freezer',s:'good'},
+  {id:32,n:'Thin-cut pork chops',q:'3 (vac sealed)',loc:'freezer',s:'good'},
+  {id:33,n:'Ground beef (flat packs)',q:'3 × 1 lb',loc:'freezer',s:'good'},
+  {id:34,n:'Stew meat',q:'1 pack',loc:'freezer',s:'good'},
+  {id:35,n:'Meatballs',q:'1 pack',loc:'freezer',s:'good'},
+  {id:36,n:'Stuffed salmon (Aldi)',q:'1 (vac sealed)',loc:'freezer',s:'good'},
+  {id:37,n:'Mediterranean salmon (Aldi)',q:'1 (vac sealed)',loc:'freezer',s:'good'},
+  {id:38,n:'Frozen shrimp (2 lb bag)',q:'1 bag',loc:'freezer',s:'good'},
+  {id:39,n:'Argentia red shrimp (2 lb)',q:'1 bag',loc:'freezer',s:'good'},
+  {id:40,n:'Sweet peas',q:'4 bags',loc:'freezer',s:'good'},
+  {id:41,n:'Corn',q:'2 bags',loc:'freezer',s:'good'},
+  {id:42,n:'Butternut squash',q:'1 bag',loc:'freezer',s:'good'},
+  {id:43,n:'Tri-color pepper & onion',q:'1 bag',loc:'freezer',s:'good'},
+  {id:44,n:'Butter sticks',q:'1 box',loc:'freezer',s:'good'},
+  {id:45,n:'Bacon (Kirkland sliced)',q:'3 packs',loc:'freezer',s:'good'},
+  {id:46,n:'Avocados (ripening)',q:'some',loc:'counter',s:'good'},
+  {id:47,n:'Red onions',q:'2',loc:'counter',s:'good'},
+  {id:48,n:'Cucumbers',q:'2',loc:'counter',s:'good'},
+  {id:49,n:'Tomatoes',q:'some',loc:'counter',s:'good'},
+  {id:50,n:'Garlic heads',q:'1 bag',loc:'counter',s:'good'},
+  {id:51,n:'Shallots',q:'some',loc:'counter',s:'good'},
+  {id:52,n:'Fingerling potatoes',q:'1 bag',loc:'counter',s:'good'},
+  {id:53,n:'Little trio potatoes',q:'1 bag',loc:'counter',s:'good'},
+  {id:54,n:'Bananas',q:'1 bunch',loc:'counter',s:'good'},
+  {id:55,n:'EVOO',q:'1 bottle',loc:'pantry',s:'good'},
+  {id:56,n:'Avocado oil',q:'1 bottle',loc:'pantry',s:'good'},
+  {id:57,n:'Canola oil',q:'1 bottle',loc:'pantry',s:'good'},
+  {id:58,n:'Soy sauce',q:'1 bottle',loc:'pantry',s:'good'},
+  {id:59,n:'Red wine vinegar',q:'1 bottle',loc:'pantry',s:'good'},
+  {id:60,n:'Balsamic vinegar',q:'1 bottle',loc:'pantry',s:'good'},
+  {id:61,n:'Honey',q:'1 jar',loc:'pantry',s:'good'},
+  {id:62,n:'Kosher salt',q:'1',loc:'pantry',s:'good'},
+  {id:63,n:'Whole wheat bread',q:'1 loaf',loc:'pantry',s:'good'},
+  {id:64,n:'Whole wheat tortillas',q:'1 pack',loc:'pantry',s:'good'},
+  {id:65,n:'Almonds',q:'some',loc:'pantry',s:'good'},
+  {id:66,n:'Dried cranberries',q:'some',loc:'pantry',s:'good'},
+  {id:67,n:'Greek yogurt (plain)',q:'32 oz',loc:'pantry',s:'good'},
+  {id:68,n:'Dark chocolate (70%+)',q:'some',loc:'pantry',s:'good'},
+  {id:69,n:'Walnuts',q:'some',loc:'pantry',s:'good'},
+  {id:70,n:'Sazón Goya',q:'1 box',loc:'cabinets',s:'good'},
+  {id:71,n:'Sazón Clásico (La Flor)',q:'1 large',loc:'cabinets',s:'good'},
+  {id:72,n:'Adobo',q:'1',loc:'cabinets',s:'good'},
+  {id:73,n:'Cumin',q:'1 jar',loc:'cabinets',s:'good'},
+  {id:74,n:'Paprika (Badia large)',q:'1',loc:'cabinets',s:'good'},
+  {id:75,n:'Chili powder',q:'1 jar',loc:'cabinets',s:'good'},
+  {id:76,n:'Garlic powder',q:'1 jar',loc:'cabinets',s:'good'},
+  {id:77,n:'Oregano',q:'2 jars',loc:'cabinets',s:'good'},
+  {id:78,n:'Cayenne',q:'1 large',loc:'cabinets',s:'good'},
+  {id:79,n:'Turmeric',q:'1',loc:'cabinets',s:'good'},
+  {id:80,n:'Cinnamon',q:'1',loc:'cabinets',s:'good'},
+  {id:81,n:'Ginger (ground)',q:'1',loc:'cabinets',s:'good'},
+  {id:82,n:'Red pepper flakes',q:'1 jar',loc:'cabinets',s:'good'},
+  {id:83,n:'Italian seasoning',q:'1',loc:'cabinets',s:'good'},
+  {id:84,n:'Bay leaves',q:'1',loc:'cabinets',s:'good'},
+  {id:85,n:'Thyme',q:'2 jars',loc:'cabinets',s:'good'},
+  {id:86,n:'Gandules (pigeon peas)',q:'2 cans',loc:'cabinets',s:'good'},
+  {id:87,n:'Kidney beans',q:'4 cans',loc:'cabinets',s:'good'},
+  {id:88,n:'Green olives',q:'1 jar',loc:'cabinets',s:'good'},
+  {id:89,n:'Corn (canned)',q:'5 cans',loc:'cabinets',s:'good'},
+  {id:90,n:'Yo Mama red sauce',q:'2 jars',loc:'cabinets',s:'good'},
+  {id:91,n:'Vodka sauce',q:'1 jar',loc:'cabinets',s:'good'},
+  {id:92,n:'Rosé sauce',q:'1 jar',loc:'cabinets',s:'good'},
+  {id:93,n:'Alfredo sauce',q:'2 jars',loc:'cabinets',s:'good'},
+  {id:94,n:'KFI butter chicken sauce',q:'3 jars',loc:'cabinets',s:'good'},
+  {id:95,n:'Spaghetti',q:'2 lbs',loc:'cabinets',s:'good'},
+  {id:96,n:'Rigatoni',q:'1 lb',loc:'cabinets',s:'good'},
+  {id:97,n:'Penne',q:'2 lbs',loc:'cabinets',s:'good'},
+  {id:98,n:'Jasmine rice',q:'large bag',loc:'cabinets',s:'good'},
+  {id:99,n:'Breadcrumbs (Italian + Panko)',q:'1 each',loc:'cabinets',s:'good'},
+  {id:100,n:'Chicken broth (pantry)',q:'some',loc:'cabinets',s:'good'},
+];
+
+// ═══════ STATE ═══════════════════════════════════
+let S = {
+  tab: 'today',
+  loc: 'all',
+  progWeek: 1,
+  inv: [],
+  weekPlan: null,
+  genMeals: [],
+  selMeals: [],
+  logs: [],
+  weights: [],
+  habits: { workout: false, dailyFix: false, water: 0, meds: false, lastReset: null },
+  feelRating: 0,
+  mealRating: 0,
+};
+
+function load() {
+  try {
+    const d = localStorage.getItem('myplan_v3');
+    if (d) {
+      S = {...S, ...JSON.parse(d)};
+    } else {
+      // Primary data missing — check for auto-backup
+      const backup = localStorage.getItem('myplan_v3_backup');
+      if (backup) {
+        const parsed = JSON.parse(backup);
+        S = {...S, ...parsed.data};
+        // Restore primary from backup
+        localStorage.setItem('myplan_v3', JSON.stringify(S));
+        console.log('Restored from auto-backup saved at', parsed.savedAt);
+      }
+    }
+  } catch(e) {}
+  if (!S.inv || S.inv.length === 0) S.inv = JSON.parse(JSON.stringify(DEFAULT_INV));
+}
+
+function save() {
+  try {
+    localStorage.setItem('myplan_v3', JSON.stringify(S));
+    // Keep a secondary auto-backup copy with timestamp
+    const backup = { data: S, savedAt: new Date().toISOString(), version: 'v3' };
+    localStorage.setItem('myplan_v3_backup', JSON.stringify(backup));
+  } catch(e) {}
+}
+
+// ═══════ TAB NAVIGATION ══════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+  document.getElementById('t-'+id).classList.add('on');
+  document.getElementById('nb-'+id).classList.add('on');
+  S.tab = id;
+  if (id === 'today') renderToday();
+  if (id === 'inventory') renderInv();
+  if (id === 'log') renderLog();
+}
+
+// ═══════ DATE LABELS ═════════════════════════════
+function initDates() {
+  const now = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const h = now.getHours();
+  document.getElementById('greet').textContent = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  document.getElementById('today-date').textContent = `${dayNames[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  document.getElementById('log-date').textContent = `${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - now.getDay() + 1 + 7);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  const fmt = d => `${months[d.getMonth()]} ${d.getDate()}`;
+  document.getElementById('next-week-range').textContent = `${fmt(mon)} – ${fmt(sun)}`;
+  document.getElementById('plan-lbl').textContent = 'Next Week';
+}
+
+// ═══════ TODAY TAB ════════════════════════════════
+function renderToday() {
+  const now = new Date();
+  const dayName = DAYS[now.getDay()];
+  const wo = WO[dayName] || {type:'Rest',lbl:'rest',ex:[]};
+  const bCls = {strength:'b-str',cardio:'b-crd',rest:'b-rst'}[wo.lbl] || 'b-rst';
+  const h = now.getHours();
+
+  let html = '';
+
+  // Adzenys reminder
+  if (h >= 6 && h <= 10 && wo.lbl !== 'rest') {
+    html += `<div class="alert a-amb"><b>Adzenys reminder:</b> Take dose → wait 30–45 min → work out. Eat something small first.</div>`;
+  }
+
+  // Workout card
+  html += `<div class="sh">TODAY'S WORKOUT</div>
+  <div class="card">
+    <div class="card-hd" onclick="toggleCard('wo-today')">
+      <h3>${dayName} — ${wo.type}</h3>
+      <span class="badge ${bCls}">${wo.lbl.toUpperCase()}</span>
+      <span style="color:rgba(255,255,255,0.6);font-size:12px;margin-left:4px;">▾</span>
+    </div>
+    <div class="card-bd hide" id="wo-today">
+      <div class="ex-list">`;
+  if (wo.ex.length) {
+    wo.ex.forEach(e => {
+      html += `<div class="ex-item"><div class="ex-n">${e.url ? `<a href="${e.url}" target="_blank">${e.n}</a>` : e.n}<div class="ex-d">${e.s ? e.s + ' · ' : ''}${e.r}${e.rest ? ' · rest ' + e.rest : ''}</div></div></div>`;
+    });
+  } else {
+    html += `<div style="font-size:13px;color:var(--text3);padding:6px 0;">Rest day — do your daily 10-min fix.</div>`;
+  }
+  html += `</div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Daily 10-min fix</div>
+        <div class="ex-list">`;
+  FIX.forEach(f => {
+    html += `<div class="ex-item"><div class="ex-n"><a href="${f.url}" target="_blank" style="color:var(--amber);">${f.n}</a><div class="ex-d">${f.r}</div></div></div>`;
+  });
+  html += `</div></div></div></div>`;
+
+  // Meals
+  html += `<div class="sh">TODAY'S MEALS</div><div class="card"><div class="card-bd">`;
+  if (S.weekPlan && S.weekPlan.days) {
+    const td = S.weekPlan.days.find(d => d.day === dayName);
+    if (td && !td.isOut) {
+      const hasRec = !!td.dinner?.name;
+      html += `<div class="meal-g">
+        <div>
+          <div class="msl-lbl">Lunch</div>
+          <div class="msl-n">${td.lunch?.name || '—'}</div>
+          <div class="msl-note">${td.lunch?.note || ''}</div>
+          <span class="mf ${td.lunch?.source==='leftover'?'mf-l':'mf-p'}">${td.lunch?.source==='leftover'?'leftover':'quick'}</span>
+        </div>
+        <div>
+          <div class="msl-lbl">Dinner</div>
+          <div style="display:flex;align-items:flex-start;gap:6px;">
+            <div class="msl-n ${hasRec?'link':''}" ${hasRec?`onclick="openRecipe('${td.dinner.name}')" style="cursor:pointer;flex:1;"`:'style="flex:1;"'}>${td.dinner?.name||'—'}${hasRec?' ▸':''}</div>
+            <button onclick="openSwap('${dayName}')" style="flex-shrink:0;padding:3px 8px;font-size:10px;background:var(--amber-d);color:var(--amber);border:1px solid rgba(255,89,16,0.3);border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">swap ↺</button>
+          </div>
+          <div class="msl-note">${td.dinner?.note||''}</div>
+          ${td.dinner?.forHer ? '<span class="mf mf-h">portion for her</span>' : ''}
+          ${td.dinner?.time ? `<span class="mf mf-p">${td.dinner.time}</span>` : ''}
+        </div>
+      </div>`;
+
+      // Defrost tomorrow
+      const tmr = DAYS[(now.getDay()+1)%7];
+      const tp = S.weekPlan.days.find(d => d.day === tmr);
+      if (tp?.dinner) {
+        html += `</div></div><div class="alert a-blu" style="margin:8px 16px 0;"><b>Defrost tonight for ${tmr}:</b> ${tp.dinner.name} — move protein from freezer to fridge now.</div>`;
+      } else {
+        html += `</div></div>`;
+      }
+    } else if (td?.isOut) {
+      html += `<div style="font-size:13px;color:var(--text3);padding:8px 0;">Eating out tonight — enjoy it.</div></div></div>`;
+    } else {
+      html += `<div style="font-size:13px;color:var(--text3);padding:8px 0 10px;">No meal planned for today.</div><button onclick="openSwap('${dayName}')" style="width:100%;padding:11px;background:var(--amber);color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">What should I make tonight?</button></div></div>`;
+    }
+  } else {
+    html += `<div style="font-size:13px;color:var(--text3);padding:8px 0 10px;">No week plan yet — or get inspiration for tonight.</div><button onclick="openSwap('${dayName}')" style="width:100%;padding:11px;background:var(--amber);color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">What should I make tonight?</button></div></div>`;
+  }
+
+  // Low inventory
+  const low = S.inv.filter(i => i.s === 'low' || i.s === 'out');
+  if (low.length) {
+    html += `<div class="sh">RUNNING LOW</div>`;
+    low.forEach(i => {
+      html += `<div class="alert ${i.s==='out'?'a-red':'a-amb'}" style="margin:4px 16px 0;"><b>${i.s==='out'?'OUT:':'LOW:'}</b> ${i.n} — ${i.loc}</div>`;
+    });
+  }
+
+  // Snacks
+  html += `<div class="sh">EVENING SNACK STRATEGY</div>
+  <div class="snack-g">
+    <div class="snack-c"><div class="snack-t">Light night</div><div class="snack-n">Greek yogurt + walnuts. Stops the rebound.</div></div>
+    <div class="snack-c"><div class="snack-t">Hungry night</div><div class="snack-n">Avocado toast on whole wheat. Won't spike blood sugar.</div></div>
+    <div class="snack-c"><div class="snack-t">Craving night</div><div class="snack-n">Dark chocolate + grapes. Already in your kitchen.</div></div>
+    <div class="snack-c"><div class="snack-t">Post-workout</div><div class="snack-n">Banana + almonds before Adzenys wears off.</div></div>
+  </div>
+  <div style="height:8px;"></div>`;
+
+  document.getElementById('today-body').innerHTML = html;
+}
+
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle('hide');
+}
+
+// ═══════ PLAN TAB — STEPS ════════════════════════
+function goPlan(n) {
+  ['ps1','ps2','ps3'].forEach((id,i) => {
+    document.getElementById(id).style.display = i+1===n ? 'flex' : 'none';
+  });
+  document.getElementById('sel-bar').style.display = n===2 ? 'flex' : 'none';
+  ['pn1','pn2','pn3'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('on', i+1===n);
+  });
+}
+
+function chip(el, field, text) {
+  el.classList.toggle('on');
+  const ta = document.getElementById(field);
+  if (el.classList.contains('on')) ta.value = ta.value ? ta.value.trimEnd()+', '+text : text;
+  else ta.value = ta.value.replace(', '+text,'').replace(text+', ','').replace(text,'').trim();
+}
+
+function selNights(el) {
+  document.querySelectorAll('#nights-tags .tag').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function selTime(el) {
+  document.querySelectorAll('#time-tags .tag').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+}
+
+async function genMeals() {
+  const expiring = document.getElementById('p-exp').value.trim();
+  const cravings = [...document.querySelectorAll('#crav-tags .tag.on')].map(t=>t.textContent);
+  const notes = document.getElementById('p-notes').value.trim();
+  const nightsSel = document.querySelector('#nights-tags .tag.on');
+  const cookNights = nightsSel ? parseInt(nightsSel.dataset.n) : 5;
+  const timeSel = document.querySelector('#time-tags .tag.on');
+  const cookTime = timeSel ? timeSel.dataset.t : '20-30 min';
+
+  // Build live inventory snapshot — prioritize fridge/counter (perishable)
+  const fridgeItems = S.inv.filter(i=>i.loc==='fridge'&&i.s!=='out').map(i=>`${i.n} (${i.q})`);
+  const counterItems = S.inv.filter(i=>i.loc==='counter'&&i.s!=='out').map(i=>`${i.n} (${i.q})`);
+  const freezerItems = S.inv.filter(i=>i.loc==='freezer'&&i.s!=='out').map(i=>`${i.n} (${i.q})`);
+  const pantryItems = S.inv.filter(i=>(i.loc==='pantry'||i.loc==='cabinets')&&i.s!=='out').map(i=>i.n);
+  const lowOutItems = S.inv.filter(i=>i.s==='low'||i.s==='out').map(i=>`${i.n} (${i.s})`);
+
+  // Build meal history (last 2 weeks of logged dinners)
+  const recentMeals = S.logs.slice(0,14).filter(l=>l.dinnerName).map(l=>l.dinnerName);
+
+  document.getElementById('pn2').disabled = false;
+  goPlan(2);
+  S.selMeals = [];
+  document.getElementById('ps2-content').innerHTML = `<div class="spin-wrap"><div class="spin"></div><div class="spin-txt">Building your 10 meal options...<br>Reading your inventory now</div></div>`;
+
+  const prompt = `You are a personal chef for a Puerto Rican man in Chicago. Generate exactly 10 meal options for his week.
+
+ABOUT HIM: Goals: lower LDL, raise HDL, lower blood sugar, burn belly fat. PR-inspired clean eating — not strict Mediterranean. NO frying ever — air fryer/oven/pan sear only. No mushrooms, no quinoa. Default serving size: 3–4 portions (himself + wife FoodSaver containers + next-day lunch). Equipment: Dutch ovens, air fryer, Ninja, sheet pans, sous vide, FoodSaver, full knife set.
+
+LIVE INVENTORY — use these, prioritize in this order:
+FRIDGE (most perishable — use first): ${fridgeItems.join(', ')||'nothing specific'}
+COUNTER (perishable — use soon): ${counterItems.join(', ')||'nothing specific'}  
+FREEZER (use after fridge/counter): ${freezerItems.join(', ')||'see standard list'}
+PANTRY/CABINETS (always available): ${pantryItems.slice(0,20).join(', ')||'full pantry'}
+LOW OR OUT — do NOT suggest dishes that depend on these: ${lowOutItems.join(', ')||'none'}
+
+STANDARD PANTRY ALWAYS AVAILABLE: PR: sofrito (Goya), sazón, adobo, gandules, kidney beans, green olives. Italian: spaghetti/rigatoni/penne, red/vodka/rosé/alfredo sauces. World: KFI butter chicken sauce (3 jars), soy sauce. Spices: full drawer (cumin, paprika, turmeric, cinnamon, ginger, oregano, thyme, bay leaves, chili powder, red pepper flakes, garlic powder, cayenne, Italian seasoning). Oils: EVOO primary. Dairy: eggs, cheeses, parmesan, butter.
+
+WORKOUTS (affects protein needs): Mon/Thu=Strength (higher protein). Tue/Wed/Fri=Cardio (lighter ok). Sat/Sun=Rest.
+
+THIS WEEK:
+- Must use before spoiling: ${expiring||'nothing specifically mentioned — check fridge/counter items above'}
+- Cravings: ${cravings.join(', ')||'open to anything good'}
+- Cook nights needed: ${cookNights}
+- Preferred active cook time per meal: ${cookTime}
+- Other notes: ${notes||'none'}
+- AVOID repeating these recent meals: ${recentMeals.join(', ')||'none on record'}
+
+GENERATE exactly 10 varied options. Rules: prioritize using fridge/counter inventory first. Never suggest frying. Each dish makes 3–4 portions. Include variety across PR, Italian, World, and Simple. Flag which meals can be prepped Sunday.
+
+Return ONLY valid JSON:
+{"meals":[{"id":1,"name":"dish name","cuisine":"pr|italian|world|simple","time":"25 min active","method":"pan sear|oven|air fryer|dutch oven|stovetop","protein":"main protein","usesExpiring":false,"expiringItem":"item name or empty","highProtein":true,"prepAhead":true,"servings":"3-4","desc":"2 sentences: what it is and why it fits his goals","cookNote":"single most important technique tip"}]}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    const data = await res.json();
+    const raw = data.content.map(c=>c.text||'').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    S.genMeals = parsed.meals;
+    renderMealOpts();
+  } catch(e) {
+    document.getElementById('ps2-content').innerHTML = `<div style="padding:16px;"><div class="err">Couldn't generate options. Check connection and try again.</div><button class="btn-s" onclick="goPlan(1)" style="margin-top:10px;">← Back</button></div>`;
+  }
+}
+
+function renderMealOpts() {
+  const cLbl = {pr:'Puerto Rican',italian:'Italian',world:'World',simple:'Simple'};
+  const cCls = {pr:'b-pr',italian:'b-it',world:'b-wl',simple:'b-sm'};
+  let html = `<div style="margin-bottom:4px;font-family:'DM Serif Display',serif;font-size:18px;">Your 10 options</div>
+  <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5;">Pick exactly 5. Expiring items flagged. Tap to select.</div>`;
+  S.genMeals.forEach(m => {
+    html += `<div class="meal-opt" id="mo-${m.id}" onclick="toggleMeal(${m.id})">
+      <div class="meal-name">${m.name}</div>
+      <div class="meal-tags">
+        <span class="badge ${cCls[m.cuisine]||'b-sm'}">${cLbl[m.cuisine]||m.cuisine}</span>
+        ${m.usesExpiring?'<span class="badge b-exp">uses expiring</span>':''}
+        ${m.highProtein?'<span class="badge b-hi">high protein</span>':''}
+        <span class="badge b-sm">${m.method}</span>
+      </div>
+      <div class="meal-desc">${m.desc}</div>
+      <div class="meal-meta"><span>${m.time}</span><span>${m.protein}</span><span>${m.servings||'3–4'} servings</span>${m.prepAhead?'<span>· can prep Sunday</span>':''}</div>
+      ${m.cookNote?`<div class="meal-tip">Tip: ${m.cookNote}</div>`:''}
+    </div>`;
+  });
+  document.getElementById('ps2-content').innerHTML = html;
+}
+
+function toggleMeal(id) {
+  const el = document.getElementById(`mo-${id}`);
+  const idx = S.selMeals.indexOf(id);
+  if (idx > -1) { S.selMeals.splice(idx,1); el.classList.remove('on'); }
+  else { if (S.selMeals.length >= 5) return; S.selMeals.push(id); el.classList.add('on'); }
+  document.getElementById('sel-ct').textContent = S.selMeals.length;
+  document.getElementById('build-btn').disabled = S.selMeals.length !== 5;
+}
+
+async function buildWeek() {
+  const chosen = S.genMeals.filter(m=>S.selMeals.includes(m.id));
+  const outNights = [...document.querySelectorAll('#out-nights .day-btn.r')].map(t=>t.dataset.day);
+  const herNights = [...document.querySelectorAll('#her-nights .day-btn.g')].map(t=>t.dataset.day);
+
+  document.getElementById('pn3').disabled = false;
+  goPlan(3);
+  document.getElementById('ps3-content').innerHTML = `<div class="spin-wrap"><div class="spin"></div><div class="spin-txt">Building your full week...<br>Meals + workouts + prep + shopping</div></div>`;
+
+  const cookNightsSel = document.querySelector('#nights-tags .tag.on');
+  const cookNightsCount = cookNightsSel ? cookNightsSel.dataset.n : 5;
+
+  const prompt = `Build a complete weekly meal and workout plan.
+
+SELECTED MEALS: ${chosen.map(m=>m.name).join(', ')}
+COOK NIGHTS NEEDED: ${cookNightsCount}
+EATING OUT: ${outNights.join(', ')||'none'}
+
+WORKOUT SCHEDULE: Mon=Strength A, Tue=Intervals, Wed=Zone 2, Thu=Strength B, Fri=Choice cardio, Sat=Rest, Sun=Active rest + MEAL PREP DAY
+
+RULES:
+- Assign meals to cook nights only (skip out nights and extra nights if fewer than 7 needed)
+- Strength days (Mon/Thu) get higher protein dinners
+- Sunday is always meal prep — identify which chosen meals can be batch cooked Sunday and eaten Mon–Wed
+- Every dinner makes 3–4 servings: enough for him + FoodSaver containers for wife + his next-day lunch
+- Lunch each day = yesterday's dinner leftovers OR a quick 5-min pantry option (sandwich, egg scramble, etc.)
+
+SHOPPING LIST — group by store, ONLY items he actually needs to buy. He already has:
+proteins (chicken thighs/drumsticks, shrimp, tilapia, pork chops, ground beef, salmon, meatballs, eggs, deli meats)
+full PR pantry (sofrito, sazón, adobo, gandules, kidney beans, olives)
+full Italian pantry (all pastas, all jarred sauces)
+full spice drawer, EVOO, chicken broth, parmesan, cheeses, butter
+
+STORES: Pete's Market (fresh produce, plantains, PR items), Jewel-Osco (general groceries, dairy), Aldi (budget items, pre-made), Costco (bulk, fish), Park Packing (fresh meat cuts), Sam's Club (bulk snacks/pantry)
+
+Return ONLY valid JSON:
+{"days":[{"day":"Mon","workout":"Strength A","workoutType":"strength","lunch":{"name":"...","note":"...","source":"leftover"},"dinner":{"name":"...","note":"2-3 sentences on how to cook it simply with key technique","time":"25 min","forHer":true,"leftoverNote":"stores well 3 days"},"isOut":false}],"sundayPrep":[{"item":"Arroz con pollo","instruction":"specific step-by-step batch cook instructions","holds":"4 days in fridge"}],"shopping":{"Pete's Market":[{"item":"plantains","qty":"4"}],"Jewel-Osco":[{"item":"Greek yogurt","qty":"32 oz"}],"Aldi":[],"Costco":[],"Park Packing":[],"Sam's Club":[]},"weekNotes":"2-3 sentence theme and key things to keep in mind this week"}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    const data = await res.json();
+    const raw = data.content.map(c=>c.text||'').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    S.weekPlan = {...parsed, herNights, outNights};
+    save();
+    renderWeekPlan(outNights, herNights);
+    renderToday();
+  } catch(e) {
+    document.getElementById('ps3-content').innerHTML = `<div class="err">Couldn't build the week. Try again.</div><button class="btn-s" onclick="goPlan(2)" style="margin-top:10px;">← Back</button>`;
+  }
+}
+
+function renderWeekPlan(outNights, herNights) {
+  const wCls = {strength:'b-str',cardio:'b-crd',rest:'b-rst'};
+  const plan = S.weekPlan;
+  let html = `<div style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:4px;">Your week</div>`;
+  if (plan.weekNotes) html += `<div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5;">${plan.weekNotes}</div>`;
+
+  plan.days.forEach(d => {
+    const isOut = outNights.includes(d.day);
+    const herTonight = herNights.includes(d.day);
+    const wtCls = wCls[d.workoutType]||'b-rst';
+    const hasRec = !!d.dinner?.name;
+
+    if (isOut) {
+      html += `<div class="day-row"><div class="day-rh"><span class="day-lbl">${d.day}</span><span class="badge ${wtCls}">${d.workout}</span><span class="day-dn" style="color:var(--text3);font-style:italic;">Eating out</span><span class="badge b-sm">out</span></div>
+      <div class="day-bd"><div class="msl-lbl">Lunch</div><div class="msl-n">${d.lunch?.name||'Leftovers'}</div><div class="msl-note">${d.lunch?.note||'Keep it light.'}</div></div></div>`;
+      return;
+    }
+
+    html += `<div class="day-row"><div class="day-rh">
+      <span class="day-lbl">${d.day}</span>
+      <span class="badge ${wtCls}">${d.workout}</span>
+      <span class="day-dn ${hasRec?'link':''}" ${hasRec?`onclick="openRecipe('${d.dinner?.name}')"`:''}>${d.dinner?.name||''}${hasRec?' ▸':''}</span>
+    </div>
+    <div class="day-bd"><div class="meal-g">
+      <div>
+        <div class="msl-lbl">Lunch</div>
+        <div class="msl-n">${d.lunch?.name||'—'}</div>
+        <div class="msl-note">${d.lunch?.note||''}</div>
+        <span class="mf ${d.lunch?.source==='leftover'?'mf-l':'mf-p'}">${d.lunch?.source==='leftover'?'leftover':'quick'}</span>
+      </div>
+      <div>
+        <div class="msl-lbl">Dinner</div>
+        <div style="display:flex;align-items:flex-start;gap:6px;">
+          <div class="msl-n" style="flex:1;">${d.dinner?.name||'—'}</div>
+          <button onclick="event.stopPropagation();openSwap('${d.day}')" style="flex-shrink:0;padding:3px 8px;font-size:10px;background:var(--amber-d);color:var(--amber);border:1px solid rgba(255,89,16,0.3);border-radius:10px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">swap ↺</button>
+        </div>
+        <div class="msl-note">${d.dinner?.note||''}</div>
+        ${d.dinner?.time?`<span class="mf mf-p">${d.dinner.time}</span>`:''}
+        ${d.dinner?.forHer||herTonight?'<span class="mf mf-h">portion for her</span>':''}
+      </div>
+    </div></div></div>`;
+  });
+
+  // Sunday prep
+  if (plan.sundayPrep?.length) {
+    html += `<div class="info-card" style="margin:8px 0 0;">
+      <div class="info-title" style="color:var(--amber);">Sunday prep session</div>
+      <div class="info-sub">Batch cook goes in first — prep everything else while it cooks.</div>`;
+    plan.sundayPrep.forEach(p => {
+      html += `<div class="li"><div class="li-dot" style="background:var(--amber);"></div><div class="li-t"><b>${p.item}</b> — ${p.instruction} <span style="color:var(--text3);font-size:10px;">(holds ${p.holds})</span></div></div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Shopping — grouped by store
+  if (plan.shopping) {
+    const shopObj = Array.isArray(plan.shopping)
+      ? plan.shopping.reduce((acc,s) => { const store = s.where||'Other'; if(!acc[store]) acc[store]=[]; acc[store].push(s); return acc; }, {})
+      : plan.shopping;
+    const storeOrder = ["Pete's Market","Jewel-Osco","Aldi","Costco","Park Packing","Sam's Club","Other"];
+    const hasItems = Object.values(shopObj).some(arr => arr && arr.length > 0);
+    if (hasItems) {
+      html += `<div class="info-card" style="margin:8px 0 0;">
+        <div class="info-title" style="color:var(--green);">Shopping list</div>
+        <div class="info-sub">Grouped by store — only what you actually need.</div>`;
+      const stores = storeOrder.filter(s => shopObj[s]?.length);
+      stores.forEach(store => {
+        html += `<div style="margin-top:10px;"><div style="font-size:10px;font-weight:500;color:var(--green);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">${store}</div>`;
+        shopObj[store].forEach(s => {
+          html += `<div class="li"><div class="li-dot" style="background:var(--green);"></div><div class="li-t">${s.qty?s.qty+' ':''}<b>${s.item}</b></div></div>`;
+        });
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  html += `<div class="divider"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 0 8px;">
+    <button class="btn-s" onclick="goPlan(1)">← New check-in</button>
+    <button class="btn-s" onclick="goPlan(2)">← Change meals</button>
+  </div>`;
+
+  document.getElementById('ps3-content').innerHTML = html;
+  document.getElementById('pn3').classList.add('done');
+}
+
+// ═══════ WORKOUT TAB ═════════════════════════════
+function renderWorkout() {
+  // Progression
+  document.getElementById('prog-track').innerHTML = PROG.map(p => {
+    const cls = p.w < S.progWeek ? 'done' : p.w === S.progWeek ? 'cur' : '';
+    return `<div class="pw"><div class="pn ${cls}" onclick="setProgWeek(${p.w})">${p.w}</div><div class="pl">Wk ${p.w}</div></div>`;
+  }).join('');
+
+  const cur = PROG.find(p => p.w === S.progWeek);
+  document.getElementById('prog-detail').innerHTML = cur ? `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">WEEK ${cur.w} FOCUS</div>
+    <div style="font-size:13px;color:var(--text);">${cur.d}</div>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <button class="btn-sm" onclick="setProgWeek(Math.max(1,S.progWeek-1))">← Prev</button>
+      <button class="btn-sm" onclick="setProgWeek(Math.min(8,S.progWeek+1))">Next →</button>
+    </div>` : '';
+
+  // Days
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  document.getElementById('wo-days').innerHTML = days.map(day => {
+    const wo = WO[day];
+    const bCls = {strength:'b-str',cardio:'b-crd',rest:'b-rst'}[wo.lbl]||'b-rst';
+    const exHtml = wo.ex.map(e => `<div class="ex-item"><div class="ex-n">${e.url?`<a href="${e.url}" target="_blank">${e.n}</a>`:e.n}<div class="ex-d">${e.s?e.s+' · ':''}${e.r}${e.rest?' · rest '+e.rest:''}</div></div></div>`).join('') || `<div style="font-size:13px;color:var(--text3);padding:6px 0;">Rest day. Do your daily fix.</div>`;
+    return `<div class="sh">${day.toUpperCase()}</div>
+    <div class="card">
+      <div class="card-hd" onclick="toggleCard('wo-${day}')">
+        <h3>${wo.type}</h3><span class="badge ${bCls}">${wo.lbl.toUpperCase()}</span>
+        <span style="color:rgba(255,255,255,0.6);font-size:12px;margin-left:4px;">▾</span>
+      </div>
+      <div class="card-bd hide" id="wo-${day}"><div class="ex-list">${exHtml}</div></div>
+    </div>`;
+  }).join('');
+
+  // Daily fix
+  document.getElementById('fix-list').innerHTML = FIX.map(f => `
+    <div class="ex-item"><div class="ex-n"><a href="${f.url}" target="_blank">${f.n}</a><div class="ex-d">${f.r}</div></div></div>`).join('');
+}
+
+function setProgWeek(n) {
+  S.progWeek = Math.max(1, Math.min(8, n));
+  save();
+  renderWorkout();
+}
+
+// ═══════ INVENTORY TAB ═══════════════════════════
+function showLoc(loc) {
+  S.loc = loc;
+  document.querySelectorAll('#loc-nav button').forEach(b => b.classList.toggle('on', b.dataset.loc === loc));
+  renderInv();
+}
+
+function renderInv() {
+  const locOrder = ['fridge','freezer','counter','pantry','cabinets'];
+  const locLbls = {fridge:'Fridge',freezer:'Freezer',counter:'Counter',pantry:'Pantry',cabinets:'Cabinets'};
+  const filtered = S.loc === 'all'
+    ? [...S.inv].sort((a,b) => locOrder.indexOf(a.loc) - locOrder.indexOf(b.loc))
+    : S.inv.filter(i => i.loc === S.loc);
+
+  const list = document.getElementById('inv-list');
+  if (!filtered.length) {
+    list.innerHTML = `<div style="padding:20px 16px;font-size:13px;color:var(--text3);">No items here. Tap "+ Add item" above.</div>`;
+    return;
+  }
+
+  let html = '';
+  let lastLoc = '';
+  filtered.forEach(item => {
+    if (S.loc === 'all' && item.loc !== lastLoc) {
+      lastLoc = item.loc;
+      html += `<div class="inv-loc-head">${locLbls[item.loc]||item.loc}</div>`;
+    }
+    const dotCls = {good:'s-g',low:'s-l',out:'s-o'}[item.s]||'s-g';
+    html += `
+    <div class="inv-item">
+      <div class="inv-row" onclick="toggleEdit(${item.id})">
+        <div class="inv-dot ${dotCls}" onclick="event.stopPropagation();cycleS(${item.id})" title="Tap to change status"></div>
+        <div class="inv-name">${item.n}</div>
+        <div class="inv-qty">${item.q}</div>
+        <div class="inv-stat">${item.s}</div>
+        <div class="inv-arr">▾</div>
+      </div>
+      <div class="inv-edit" id="ie-${item.id}">
+        <div class="inv-2col">
+          <div><div class="inv-lbl">Name</div><input type="text" id="in-${item.id}" value="${item.n}" onclick="event.stopPropagation()"></div>
+          <div><div class="inv-lbl">Quantity</div><input type="text" id="iq-${item.id}" value="${item.q}" onclick="event.stopPropagation()"></div>
+        </div>
+        <div class="inv-2col">
+          <div>
+            <div class="inv-lbl">Location</div>
+            <select id="il-${item.id}" onclick="event.stopPropagation()">
+              <option value="fridge" ${item.loc==='fridge'?'selected':''}>Fridge</option>
+              <option value="freezer" ${item.loc==='freezer'?'selected':''}>Freezer</option>
+              <option value="counter" ${item.loc==='counter'?'selected':''}>Counter</option>
+              <option value="pantry" ${item.loc==='pantry'?'selected':''}>Pantry</option>
+              <option value="cabinets" ${item.loc==='cabinets'?'selected':''}>Cabinets</option>
+            </select>
+          </div>
+          <div>
+            <div class="inv-lbl">Status</div>
+            <select id="is-${item.id}" onclick="event.stopPropagation()">
+              <option value="good" ${item.s==='good'?'selected':''}>Good</option>
+              <option value="low" ${item.s==='low'?'selected':''}>Low</option>
+              <option value="out" ${item.s==='out'?'selected':''}>Out</option>
+            </select>
+          </div>
+        </div>
+        <div class="inv-actions">
+          <button class="inv-save" onclick="event.stopPropagation();saveEdit(${item.id})">Save</button>
+          <button class="inv-cancel" onclick="event.stopPropagation();toggleEdit(${item.id})">Cancel</button>
+          <button class="inv-del" onclick="event.stopPropagation();delItem(${item.id})">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+function toggleEdit(id) {
+  const panel = document.getElementById(`ie-${id}`);
+  if (!panel) return;
+  const isOpen = panel.classList.contains('open');
+  document.querySelectorAll('.inv-edit.open').forEach(p => p.classList.remove('open'));
+  if (!isOpen) {
+    panel.classList.add('open');
+    document.getElementById(`in-${id}`)?.focus();
+  }
+}
+
+function cycleS(id) {
+  const item = S.inv.find(i => i.id === id);
+  if (!item) return;
+  const order = ['good','low','out'];
+  item.s = order[(order.indexOf(item.s)+1)%3];
+  save();
+  renderInv();
+  renderToday();
+}
+
+function saveEdit(id) {
+  const item = S.inv.find(i => i.id === id);
+  if (!item) return;
+  const n = document.getElementById(`in-${id}`)?.value.trim();
+  const q = document.getElementById(`iq-${id}`)?.value.trim();
+  const l = document.getElementById(`il-${id}`)?.value;
+  const s = document.getElementById(`is-${id}`)?.value;
+  if (n) item.n = n;
+  if (q) item.q = q;
+  if (l) item.loc = l;
+  if (s) item.s = s;
+  save();
+  renderInv();
+  renderToday();
+}
+
+function delItem(id) {
+  const item = S.inv.find(i => i.id === id);
+  if (!item) return;
+  if (confirm(`Remove "${item.n}"?`)) {
+    S.inv = S.inv.filter(i => i.id !== id);
+    save();
+    renderInv();
+  }
+}
+
+function toggleAdd() {
+  const f = document.getElementById('add-form');
+  const btn = document.getElementById('add-tog');
+  const open = f.style.display !== 'none';
+  f.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '+ Add item' : '✕ Cancel';
+  if (!open) document.getElementById('ni-name').focus();
+}
+
+function addItem() {
+  const name = document.getElementById('ni-name').value.trim();
+  if (!name) { document.getElementById('ni-name').focus(); return; }
+  const qty = document.getElementById('ni-qty').value.trim();
+  const stat = document.getElementById('ni-stat').value;
+  const loc = document.getElementById('ni-loc').value;
+  const newId = S.inv.length ? Math.max(...S.inv.map(i=>i.id))+1 : 1;
+  S.inv.push({id:newId, n:name, q:qty||'some', loc, s:stat});
+  save();
+  document.getElementById('ni-name').value = '';
+  document.getElementById('ni-qty').value = '';
+  document.getElementById('ni-stat').value = 'good';
+  document.getElementById('add-form').style.display = 'none';
+  document.getElementById('add-tog').textContent = '+ Add item';
+  showLoc(loc);
+}
+
+// ═══════ LOG TAB ═════════════════════════════════
+function renderLog() {
+  updateLastBackupTime();
+  const now = new Date();
+  const dayName = DAYS[now.getDay()];
+  const wo = WO[dayName] || {ex:[]};
+  const allEx = [...(wo.ex||[]), ...FIX];
+
+  document.getElementById('ex-check').innerHTML = allEx.map(e => `
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2);">
+      <input type="checkbox" class="ex-chk" value="${e.n}" style="accent-color:var(--green);width:16px;height:16px;">
+      ${e.n}
+    </label>`).join('');
+
+  renderStars('feel-stars', S.feelRating, 'feel');
+  renderStars('meal-stars', S.mealRating, 'meal');
+
+  // Inventory quick-mark
+  document.getElementById('inv-check').innerHTML = S.inv.filter(i=>i.s==='good').slice(0,16).map(i =>
+    `<div class="chip" onclick="this.classList.toggle('on');markUsed(${i.id})">${i.n}</div>`
+  ).join('');
+
+  renderLogHist();
+}
+
+function renderStars(containerId, val, key) {
+  document.getElementById(containerId).innerHTML = [1,2,3,4,5].map(v =>
+    `<span class="star ${v<=val?'on':''}" onclick="setStar('${containerId}','${key}',${v})">★</span>`
+  ).join('');
+}
+
+function setStar(cid, key, val) {
+  if (key === 'feel') S.feelRating = val;
+  if (key === 'meal') S.mealRating = val;
+  document.querySelectorAll(`#${cid} .star`).forEach((s,i) => s.classList.toggle('on', i < val));
+}
+
+function togWo() {
+  const t = document.getElementById('wo-tog');
+  t.classList.toggle('on');
+  document.getElementById('wo-detail').style.display = t.classList.contains('on') ? 'block' : 'none';
+}
+
+function markUsed(id) {
+  const item = S.inv.find(i => i.id === id);
+  if (item && item.s === 'good') { item.s = 'low'; save(); }
+}
+
+function saveLog() {
+  const today = new Date().toDateString();
+  const workedOut = document.getElementById('wo-tog').classList.contains('on');
+  const exercises = [...document.querySelectorAll('.ex-chk:checked')].map(c=>c.value);
+  const notes = document.getElementById('meal-notes').value.trim();
+  // Capture tonight's dinner name for meal history awareness
+  const dayName = DAYS[new Date().getDay()];
+  const todayPlan = S.weekPlan?.days?.find(d=>d.day===dayName);
+  const dinnerName = todayPlan?.dinner?.name || null;
+  const entry = {date:today, workedOut, exercises, feelRating:S.feelRating, mealRating:S.mealRating, notes, dinnerName};
+  const idx = S.logs.findIndex(e=>e.date===today);
+  if (idx>-1) S.logs[idx] = entry; else S.logs.unshift(entry);
+  if (S.logs.length > 30) S.logs = S.logs.slice(0,30);
+  save();
+  const msg = document.getElementById('log-saved');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+  renderLogHist();
+}
+
+function renderLogHist() {
+  document.getElementById('log-hist').innerHTML = S.logs.length === 0
+    ? `<div style="padding:12px 16px;font-size:13px;color:var(--text3);">No entries yet.</div>`
+    : S.logs.slice(0,7).map(e => `
+      <div class="log-entry">
+        <div class="log-date">${e.date}</div>
+        <div class="log-row"><span class="log-lbl">Workout</span><span class="log-val" style="color:${e.workedOut?'var(--green)':'var(--text3)'}">${e.workedOut?'Done':'Rest'}</span></div>
+        ${e.exercises?.length?`<div class="log-row"><span style="font-size:11px;color:var(--text3);">${e.exercises.join(' · ')}</span></div>`:''}
+        <div class="log-row"><span class="log-lbl">Felt</span><span class="log-val">${'★'.repeat(e.feelRating||0)}${'☆'.repeat(5-(e.feelRating||0))}</span></div>
+        <div class="log-row"><span class="log-lbl">Meal</span><span class="log-val">${'★'.repeat(e.mealRating||0)}${'☆'.repeat(5-(e.mealRating||0))}</span></div>
+        ${e.notes?`<div style="margin-top:5px;font-size:12px;color:var(--text2);font-style:italic;">"${e.notes}"</div>`:''}
+      </div>`).join('');
+}
+
+// ═══════ RECIPE MODAL ════════════════════════════
+// Cache for AI-generated recipes so we don't re-fetch
+const recipeCache = {};
+
+let cookModeActive = false;
+let cookModeStep = 0;
+let cookModeSteps = [];
+let cookTimer = null;
+let cookTimerSecs = 0;
+
+function renderRecipeHTML(r) {
+  const cLbl = {pr:'Puerto Rican',italian:'Italian',world:'World',simple:'Simple'};
+  const cCls = {pr:'b-pr',italian:'b-it',world:'b-wl',simple:'b-sm'};
+  document.getElementById('rec-badge').innerHTML = `
+    <span class="badge ${cCls[r.c]||'b-sm'}">${cLbl[r.c]||r.c}</span>
+    <span style="font-size:11px;color:var(--text3);margin-left:8px;">${r.time} · ${r.active} active · ${r.servings||'3–4'} servings</span>`;
+
+  cookModeSteps = Array.isArray(r.steps) ? r.steps : [];
+
+  let html = '';
+
+  // Cook mode toggle
+  html += `<div style="display:flex;gap:8px;margin-bottom:14px;">
+    <button onclick="startCookMode()" style="flex:1;padding:10px;background:var(--amber);color:#ffffff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;">Start cook mode →</button>
+  </div>`;
+
+  // Ingredients
+  html += `<div class="rec-sec"><div class="rec-sec-t">Ingredients (${r.servings||'3–4'} servings)</div>`;
+  r.ing.forEach(i => { html += `<div class="ing"><div class="ing-amt">${i.a}</div><div class="ing-n">${i.n}</div></div>`; });
+  html += `</div>`;
+
+  // Key tip
+  if (r.tip) html += `<div class="step-tip">${r.tip}</div>`;
+
+  // Steps (reference view)
+  html += `<div class="rec-sec" style="margin-top:12px;"><div class="rec-sec-t">Steps</div>`;
+  cookModeSteps.forEach((s,i) => {
+    const stepText = typeof s === 'object' ? s.instruction || s.text || JSON.stringify(s) : s;
+    const hasTimer = typeof s === 'object' && s.timer;
+    html += `<div class="step">
+      <div class="step-n">${i+1}</div>
+      <div class="step-t">${stepText}${hasTimer ? ` <span style="color:var(--amber);font-size:11px;">(${s.timer})</span>` : ''}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<div style="margin-top:12px;padding:9px 12px;background:var(--green-d);border-radius:var(--rsm);font-size:12px;color:var(--green);">FoodSaver her portion <b>before</b> you sit down — not after.</div>`;
+  document.getElementById('rec-body').innerHTML = html;
+}
+
+function startCookMode() {
+  cookModeActive = true;
+  cookModeStep = 0;
+  renderCookStep();
+}
+
+function renderCookStep() {
+  const total = cookModeSteps.length;
+  const s = cookModeSteps[cookModeStep];
+  const stepText = typeof s === 'object' ? s.instruction || s.text || '' : s;
+  const hasTimer = typeof s === 'object' && s.timer;
+  const timerSecs = hasTimer ? parseTimerString(s.timer) : 0;
+
+  let html = `
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Step ${cookModeStep+1} of ${total}</div>
+      <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:14px;overflow:hidden;">
+        <div style="height:100%;width:${((cookModeStep+1)/total)*100}%;background:var(--amber);border-radius:2px;transition:width 0.3s;"></div>
+      </div>
+      <div style="font-size:16px;color:var(--text);line-height:1.6;margin-bottom:16px;">${stepText}</div>
+      ${timerSecs > 0 ? `<div id="cook-timer-wrap" style="background:var(--slate4);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Timer</div>
+        <div id="cook-timer-display" style="font-family:'DM Serif Display',serif;font-size:36px;color:var(--amber);letter-spacing:2px;">${formatTimer(timerSecs)}</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;">
+          <button onclick="startStepTimer(${timerSecs})" style="padding:7px 16px;background:var(--amber);color:#ffffff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;">Start</button>
+          <button onclick="stopTimer()" style="padding:7px 16px;background:var(--slate3);color:var(--text2);border:1px solid var(--border);border-radius:var(--rsm);font-size:13px;cursor:pointer;">Stop</button>
+        </div>
+      </div>` : ''}
+      <div style="display:flex;gap:8px;">
+        ${cookModeStep > 0 ? `<button onclick="prevCookStep()" style="padding:11px 18px;background:var(--slate3);color:var(--text2);border:1px solid var(--border);border-radius:var(--rsm);font-size:13px;cursor:pointer;">← Back</button>` : ''}
+        ${cookModeStep < total-1
+          ? `<button onclick="nextCookStep()" style="flex:1;padding:11px;background:var(--amber);color:#ffffff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:500;cursor:pointer;">Next step →</button>`
+          : `<button onclick="exitCookMode()" style="flex:1;padding:11px;background:var(--green);color:#ffffff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:500;cursor:pointer;">Done! 🎉</button>`}
+      </div>
+      <button onclick="exitCookMode()" style="width:100%;margin-top:8px;padding:8px;background:none;color:var(--text3);border:none;font-size:12px;cursor:pointer;">Exit cook mode</button>
+    </div>`;
+  document.getElementById('rec-body').innerHTML = html;
+}
+
+function parseTimerString(str) {
+  if (!str) return 0;
+  const mins = str.match(/(\d+)\s*min/i);
+  const secs = str.match(/(\d+)\s*sec/i);
+  return (mins ? parseInt(mins[1]) * 60 : 0) + (secs ? parseInt(secs[1]) : 0);
+}
+
+function formatTimer(secs) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function startStepTimer(secs) {
+  stopTimer();
+  cookTimerSecs = secs;
+  cookTimer = setInterval(() => {
+    cookTimerSecs--;
+    const el = document.getElementById('cook-timer-display');
+    if (el) el.textContent = formatTimer(cookTimerSecs);
+    if (cookTimerSecs <= 0) {
+      stopTimer();
+      if (el) el.textContent = "Done!";
+      el.style.color = 'var(--green)';
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (cookTimer) { clearInterval(cookTimer); cookTimer = null; }
+}
+
+function nextCookStep() { stopTimer(); cookModeStep++; renderCookStep(); }
+function prevCookStep() { stopTimer(); cookModeStep--; renderCookStep(); }
+function exitCookMode() { stopTimer(); cookModeActive = false; renderRecipeHTML(currentRecipe); }
+
+let currentRecipe = null;
+
+async function openRecipe(name) {
+  if (!name) return;
+
+  // Open modal immediately with title
+  document.getElementById('rec-title').textContent = name;
+  document.getElementById('rec-badge').innerHTML = '';
+  document.getElementById('recipe-bg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  stopTimer();
+
+  // If hardcoded, render instantly
+  if (RECIPES[name]) {
+    currentRecipe = RECIPES[name];
+    renderRecipeHTML(RECIPES[name]);
+    return;
+  }
+
+  // Check runtime cache
+  if (recipeCache[name]) {
+    currentRecipe = recipeCache[name];
+    renderRecipeHTML(recipeCache[name]);
+    return;
+  }
+
+  // Show loading state
+  document.getElementById('rec-body').innerHTML = `
+    <div class="spin-wrap" style="padding:40px 24px;">
+      <div class="spin"></div>
+      <div class="spin-txt">Generating recipe for<br><b style="color:var(--text);">${name}</b></div>
+    </div>`;
+
+  const prompt = `Generate a detailed recipe card for "${name}" for a Puerto Rican man in Chicago who is learning to cook.
+
+CONTEXT: PR-inspired clean eating. No frying — air fryer/oven/pan sear only. No mushrooms/quinoa. Makes 3–4 servings (himself + wife FoodSaver containers + next-day lunch). Health goals: lower LDL/raise HDL/lower blood sugar. Primary oil: EVOO. Equipment: Dutch ovens, air fryer, Ninja, sheet pans, sous vide, FoodSaver. Spice drawer: adobo, sazón, sofrito, cumin, paprika, turmeric, oregano, thyme, garlic powder, cayenne, red pepper flakes, Italian seasoning.
+
+RECIPE CARD QUALITY STANDARD — every step must include:
+- Exact heat level (medium-low, medium-high, high, 400°F, etc.)
+- Exact time (not "a few minutes" — say "3–4 minutes")
+- The visual or sensory cue that tells you it's done ("until the edges just start turning golden", "until fragrant", "skin should release easily from pan")
+- Any technique that prevents failure ("don't move the chicken for 8 minutes — the crust forms from sustained contact")
+
+Return ONLY valid JSON, no markdown:
+{"c":"pr|italian|world|simple","time":"total time e.g. 45 min","active":"active cooking time e.g. 20 min","servings":"3–4","ing":[{"a":"amount","n":"ingredient name"}],"tip":"the single most important technique tip that prevents the most common mistake","steps":[{"instruction":"full detailed step with heat level, exact time, and visual doneness cue","timer":"X min (optional — only include if step involves waiting/cooking time, omit for active steps)"}]}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{role: 'user', content: prompt}]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content.map(c => c.text || '').join('');
+    const r = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    recipeCache[name] = r;
+    currentRecipe = r;
+    // Only render if modal is still open for this recipe
+    if (document.getElementById('rec-title').textContent === name) {
+      renderRecipeHTML(r);
+    }
+  } catch(e) {
+    if (document.getElementById('rec-title').textContent === name) {
+      document.getElementById('rec-body').innerHTML = `
+        <div class="err">Couldn't load recipe right now. Check your connection.</div>
+        <div style="margin-top:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+          <b style="color:var(--text);">Quick tip while you're here:</b><br>
+          Search "${name}" on YouTube for a visual walkthrough, or ask me in chat for the full recipe.
+        </div>`;
+    }
+  }
+}
+
+function closeRecipe() {
+  stopTimer();
+  cookModeActive = false;
+  document.getElementById('recipe-bg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('recipe-bg')) closeRecipe();
+}
+
+// ═══════ WEIGHT TRACKER ══════════════════════════
+function logWeight() {
+  const val = parseFloat(document.getElementById('w-input').value);
+  if (isNaN(val) || val < 50 || val > 500) {
+    alert('Please enter a valid weight in lbs.');
+    return;
+  }
+  const dateInput = document.getElementById('w-date').value;
+  const date = dateInput || new Date().toISOString().split('T')[0];
+  // Remove existing entry for this date if any (overwrite)
+  S.weights = S.weights.filter(w => w.date !== date);
+  S.weights.push({date, lbs: val});
+  S.weights.sort((a,b) => new Date(b.date) - new Date(a.date));
+  if (S.weights.length > 52) S.weights = S.weights.slice(0, 52);
+  save();
+  document.getElementById('w-input').value = '';
+  // Reset date to today after logging
+  document.getElementById('w-date').value = new Date().toISOString().split('T')[0];
+  const msg = document.getElementById('w-saved');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 2000);
+  renderWeight();
+}
+
+function renderWeight() {
+  // Set date input default to today
+  const dateEl = document.getElementById('w-date');
+  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+  const weights = S.weights;
+  const statsEl = document.getElementById('w-stats');
+  const histEl = document.getElementById('w-history');
+  const emptyEl = document.getElementById('w-chart-empty');
+
+  if (!weights.length) {
+    statsEl.innerHTML = '';
+    histEl.innerHTML = `<div style="padding:20px;text-align:center;font-size:13px;color:var(--text3);">No entries yet. Log your first weight above.</div>`;
+    if (emptyEl) emptyEl.style.display = 'flex';
+    return;
+  }
+
+  const latest = weights[0].lbs;
+  const oldest = weights[weights.length-1].lbs;
+  const totalChange = (latest - oldest).toFixed(1);
+  const changeColor = totalChange < 0 ? 'var(--green)' : totalChange > 0 ? 'var(--coral)' : 'var(--text)';
+  const changePrefix = totalChange > 0 ? '+' : '';
+
+  // Stats
+  statsEl.innerHTML = `
+    <div style="background:var(--slate3);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Current</div>
+      <div style="font-size:22px;font-weight:500;color:var(--text);">${latest}</div>
+      <div style="font-size:10px;color:var(--text3);">lbs</div>
+    </div>
+    <div style="background:var(--slate3);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Total change</div>
+      <div style="font-size:22px;font-weight:500;color:${changeColor};">${changePrefix}${totalChange}</div>
+      <div style="font-size:10px;color:var(--text3);">lbs</div>
+    </div>
+    <div style="background:var(--slate3);border:1px solid var(--border);border-radius:var(--rsm);padding:10px 12px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Entries</div>
+      <div style="font-size:22px;font-weight:500;color:var(--text);">${weights.length}</div>
+      <div style="font-size:10px;color:var(--text3);">weigh-ins</div>
+    </div>`;
+
+  // Chart
+  if (emptyEl) emptyEl.style.display = weights.length < 2 ? 'flex' : 'none';
+  if (weights.length >= 2) drawWeightChart(weights);
+
+  // History table
+  histEl.innerHTML = weights.map((w, i) => {
+    const prev = weights[i+1];
+    const diff = prev ? (w.lbs - prev.lbs).toFixed(1) : null;
+    const diffColor = diff === null ? '' : diff < 0 ? 'color:var(--green)' : diff > 0 ? 'color:var(--coral)' : '';
+    const diffText = diff === null ? '' : (diff > 0 ? '+' : '') + diff;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);">
+      <div style="flex:1;font-size:13px;color:var(--text);">${formatDate(w.date)}</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);">${w.lbs} lbs</div>
+      ${diffText ? `<div style="font-size:12px;${diffColor};min-width:36px;text-align:right;">${diffText}</div>` : '<div style="min-width:36px;"></div>'}
+      <div onclick="deleteWeight('${w.date}')" style="font-size:12px;color:var(--coral);cursor:pointer;padding:2px 6px;">✕</div>
+    </div>`;
+  }).join('');
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+function deleteWeight(date) {
+  if (confirm('Remove this entry?')) {
+    S.weights = S.weights.filter(w => w.date !== date);
+    save();
+    renderWeight();
+  }
+}
+
+function drawWeightChart(weights) {
+  const canvas = document.getElementById('w-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width;
+  const H = rect.height;
+  const pad = {t:20, r:20, b:30, l:44};
+
+  // Data — oldest to newest for left-to-right
+  const data = [...weights].reverse();
+  const vals = data.map(w => w.lbs);
+  const minV = Math.min(...vals) - 2;
+  const maxV = Math.max(...vals) + 2;
+
+  const toX = i => pad.l + (i / (data.length-1)) * (W - pad.l - pad.r);
+  const toY = v => pad.t + (1 - (v - minV) / (maxV - minV)) * (H - pad.t - pad.b);
+
+  // Background grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (i/4) * (H - pad.t - pad.b);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const label = (maxV - i * (maxV-minV)/4).toFixed(0);
+    ctx.fillStyle = 'rgba(90,86,80,0.9)';
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(label, pad.l - 4, y + 4);
+  }
+
+  // Trend line (simple linear regression)
+  if (data.length >= 3) {
+    const n = data.length;
+    const xs = data.map((_,i) => i);
+    const ys = vals;
+    const sumX = xs.reduce((a,b)=>a+b,0);
+    const sumY = ys.reduce((a,b)=>a+b,0);
+    const sumXY = xs.reduce((a,x,i)=>a+x*ys[i],0);
+    const sumX2 = xs.reduce((a,x)=>a+x*x,0);
+    const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+    const intercept = (sumY - slope*sumX) / n;
+    ctx.strokeStyle = 'rgba(45,184,122,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(intercept));
+    ctx.lineTo(toX(n-1), toY(slope*(n-1)+intercept));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Main line
+  ctx.strokeStyle = '#e8a020';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  data.forEach((w, i) => {
+    if (i === 0) ctx.moveTo(toX(i), toY(w.lbs));
+    else ctx.lineTo(toX(i), toY(w.lbs));
+  });
+  ctx.stroke();
+
+  // Dots
+  data.forEach((w, i) => {
+    ctx.beginPath();
+    ctx.arc(toX(i), toY(w.lbs), 3.5, 0, Math.PI*2);
+    ctx.fillStyle = '#e8a020';
+    ctx.fill();
+  });
+}
+
+// ═══════ HABITS ══════════════════════════════════
+function resetHabitsIfNewDay() {
+  const today = new Date().toDateString();
+  if (S.habits.lastReset !== today) {
+    S.habits = { workout: false, dailyFix: false, water: 0, meds: false, lastReset: today, dismissed: false };
+    save();
+  }
+}
+
+function allHabitsDone() {
+  return S.habits.workout && S.habits.dailyFix && S.habits.water >= 3 && S.habits.meds;
+}
+
+function openHabits() {
+  resetHabitsIfNewDay();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const now = new Date();
+  document.getElementById('habit-date').textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+  renderHabitCards();
+  document.getElementById('habit-bg').classList.add('open');
+}
+
+function closeHabits() {
+  document.getElementById('habit-bg').classList.remove('open');
+  // Mark dismissed so it doesn't auto-reopen this session
+  // (resets with habits at midnight via lastReset check)
+  S.habits.dismissed = true;
+  save();
+}
+
+function renderHabitCards() {
+  const h = S.habits;
+  const doneCount = (h.workout ? 1 : 0) + (h.dailyFix ? 1 : 0) + (h.water >= 3 ? 1 : 0) + (h.meds ? 1 : 0);
+
+  // Update progress ring — circumference of r=20 circle = 125.66
+  const circ = 125.66;
+  const offset = circ - (doneCount / 4) * circ;
+  const ring = document.getElementById('habit-ring');
+  const ringTxt = document.getElementById('habit-ring-txt');
+  if (ring) { ring.style.strokeDashoffset = offset; ring.style.stroke = doneCount === 4 ? 'var(--green)' : 'var(--amber)'; }
+  if (ringTxt) { ringTxt.textContent = `${doneCount}/4`; ringTxt.style.color = doneCount === 4 ? 'var(--green)' : 'var(--amber)'; }
+
+  const cards = [
+    {
+      key: 'workout',
+      icon: '💪',
+      name: 'Workout (Full)',
+      prog: h.workout ? 'Done' : '0/1',
+      color: 'hc-olive',
+      done: h.workout,
+    },
+    {
+      key: 'dailyFix',
+      icon: '🌟',
+      name: 'Daily 10-min Fix',
+      prog: h.dailyFix ? 'Done' : '0/1',
+      color: 'hc-purple',
+      done: h.dailyFix,
+    },
+    {
+      key: 'water',
+      icon: '💧',
+      name: 'Drink Water',
+      prog: `${h.water}/3`,
+      color: 'hc-water',
+      done: h.water >= 3,
+    },
+    {
+      key: 'meds',
+      icon: '💊',
+      name: 'Evening Meds',
+      prog: h.meds ? 'Done' : '0/1',
+      color: 'hc-brown',
+      done: h.meds,
+    },
+  ];
+
+  document.getElementById('habit-cards').innerHTML = cards.map(c => `
+    <div class="hcard ${c.color} ${c.done ? 'done' : ''}" onclick="tapHabit('${c.key}')">
+      <div>
+        <div class="hcard-icon">${c.icon}</div>
+        <div class="hcard-name">${c.name}</div>
+        <div class="hcard-prog" style="color:${c.done ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.7)'};">${c.prog}</div>
+      </div>
+      <div class="hcard-check">${c.done ? '✓' : ''}</div>
+    </div>`).join('');
+
+  // Auto-dismiss if all done
+  if (allHabitsDone()) {
+    setTimeout(() => closeHabits(), 800);
+  }
+}
+
+function tapHabit(key) {
+  resetHabitsIfNewDay();
+  if (key === 'dailyFix') {
+    S.habits.dailyFix = !S.habits.dailyFix;
+  } else if (key === 'workout') {
+    S.habits.workout = !S.habits.workout;
+    // Auto-fill workout log toggle
+    const tog = document.getElementById('wo-tog');
+    if (tog && S.habits.workout) tog.classList.add('on');
+    document.getElementById('wo-detail').style.display = S.habits.workout ? 'block' : 'none';
+  } else if (key === 'water') {
+    S.habits.water = S.habits.water >= 3 ? 0 : S.habits.water + 1;
+  } else if (key === 'meds') {
+    S.habits.meds = !S.habits.meds;
+    // Dismiss Adzenys reminder on Today tab if meds checked
+    renderToday();
+  }
+  save();
+  renderHabitCards();
+}
+
+function shouldShowHabits() {
+  // Show if: not all done AND not manually dismissed today
+  resetHabitsIfNewDay();
+  return !allHabitsDone() && !S.habits.dismissed;
+}
+
+// ═══════ MEAL SWAP ═══════════════════════════════
+let swapDay = null;
+
+function openSwap(day) {
+  swapDay = day;
+  const dayNames = {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
+  document.getElementById('swap-day-label').textContent = `${dayNames[day] || day}'s dinner`;
+  document.getElementById('swap-body').innerHTML = renderSwapStep1();
+  document.getElementById('swap-bg').classList.add('open');
+}
+
+function closeSwapModal(e) {
+  if (!e || e.target === document.getElementById('swap-bg')) {
+    document.getElementById('swap-bg').classList.remove('open');
+  }
+}
+
+function renderSwapStep1() {
+  return `<div style="padding:16px;">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5;">Tell me what you're feeling and how much you want to cook — I'll suggest 3 options from what you have.</div>
+
+    <div class="ig">
+      <label class="lbl">What are you feeling?</label>
+      <textarea id="swap-craving" placeholder="e.g. something with shrimp, a burger, no idea just surprise me..." style="min-height:60px;"></textarea>
+      <div class="chips" style="margin-top:6px;">
+        <div class="chip" onclick="chip(this,'swap-craving','surprise me')">surprise me</div>
+        <div class="chip" onclick="chip(this,'swap-craving','something with shrimp')">shrimp</div>
+        <div class="chip" onclick="chip(this,'swap-craving','chicken')">chicken</div>
+        <div class="chip" onclick="chip(this,'swap-craving','pasta')">pasta</div>
+        <div class="chip" onclick="chip(this,'swap-craving','something light')">light</div>
+        <div class="chip" onclick="chip(this,'swap-craving','rice dish')">rice dish</div>
+        <div class="chip" onclick="chip(this,'swap-craving','a burger')">burger</div>
+        <div class="chip" onclick="chip(this,'swap-craving','Puerto Rican')">PR</div>
+        <div class="chip" onclick="chip(this,'swap-craving','fish')">fish</div>
+        <div class="chip" onclick="chip(this,'swap-craving','eggs')">eggs</div>
+      </div>
+    </div>
+
+    <div class="ig">
+      <label class="lbl">How much do you want to cook tonight?</label>
+      <div class="tags" id="swap-time-tags">
+        <div class="tag" onclick="selSwapTime(this)" data-t="under 15 min — bare minimum">Under 15 min</div>
+        <div class="tag on" onclick="selSwapTime(this)" data-t="20–30 min">20–30 min</div>
+        <div class="tag" onclick="selSwapTime(this)" data-t="45 min, mostly hands-off is fine">45 min hands-off</div>
+        <div class="tag" onclick="selSwapTime(this)" data-t="up to an hour, I'm in the mood to cook">Full cook, I'm down</div>
+      </div>
+    </div>
+
+    <button class="btn-p" onclick="genSwapOptions()">Find me 3 options →</button>
+  </div>`;
+}
+
+function selSwapTime(el) {
+  document.querySelectorAll('#swap-time-tags .tag').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+}
+
+async function genSwapOptions() {
+  const craving = document.getElementById('swap-craving')?.value.trim() || 'surprise me';
+  const timeSel = document.querySelector('#swap-time-tags .tag.on');
+  const cookTime = timeSel ? timeSel.dataset.t : '20–30 min';
+
+  // Current plan context
+  const dayPlan = S.weekPlan?.days?.find(d => d.day === swapDay);
+  const currentDinner = dayPlan?.dinner?.name || 'nothing planned';
+  const workoutType = dayPlan?.workoutType || 'unknown';
+
+  // Live inventory
+  const fridgeItems = S.inv.filter(i=>i.loc==='fridge'&&i.s!=='out').map(i=>`${i.n} (${i.q})`);
+  const counterItems = S.inv.filter(i=>i.loc==='counter'&&i.s!=='out').map(i=>`${i.n} (${i.q})`);
+  const freezerItems = S.inv.filter(i=>i.loc==='freezer'&&i.s!=='out').map(i=>`${i.n} (${i.q})`);
+  const lowItems = S.inv.filter(i=>i.s==='low'||i.s==='out').map(i=>i.n);
+
+  document.getElementById('swap-body').innerHTML = `<div class="spin-wrap"><div class="spin"></div><div class="spin-txt">Finding your 3 options...<br>Checking inventory</div></div>`;
+
+  const prompt = `Personal chef for a Puerto Rican man in Chicago. He wants to swap his planned dinner (${currentDinner}) for something else tonight.
+
+CRAVING: ${craving}
+COOK TIME AVAILABLE: ${cookTime}
+TONIGHT'S WORKOUT TYPE: ${workoutType} (strength days need higher protein)
+
+LIVE INVENTORY — prioritize fridge/counter first:
+FRIDGE: ${fridgeItems.join(', ')||'check standard'}
+COUNTER: ${counterItems.join(', ')||'check standard'}
+FREEZER: ${freezerItems.join(', ')||'check standard'}
+DO NOT USE (low/out): ${lowItems.join(', ')||'none'}
+PANTRY ALWAYS AVAILABLE: sofrito, sazón, adobo, gandules, kidney beans, olives, all pastas, jarred sauces, KFI butter chicken, full spice drawer, EVOO, garlic, onions
+
+RULES: No frying. No mushrooms. No quinoa. Makes 3–4 portions. Air fryer/oven/pan sear/dutch oven only.
+
+Generate exactly 3 dinner options. Make them genuinely different from each other. Each must fit the cook time constraint strictly.
+
+Return ONLY valid JSON:
+{"options":[{"name":"dish name","cuisine":"pr|italian|world|simple","time":"20 min active","method":"pan sear","protein":"chicken thighs","desc":"2 sentences: what it is and why it works tonight","cookNote":"single most important tip","tomorrowLunch":"what to do with leftovers for lunch tomorrow"}]}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data = await res.json();
+    const raw = data.content.map(c=>c.text||'').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderSwapOptions(parsed.options);
+  } catch(e) {
+    document.getElementById('swap-body').innerHTML = `<div style="padding:16px;"><div class="err">Couldn't load options. Check connection.</div><button class="btn-s" onclick="document.getElementById('swap-body').innerHTML=renderSwapStep1()" style="margin-top:10px;">← Back</button></div>`;
+  }
+}
+
+function renderSwapOptions(options) {
+  const cLbl = {pr:'Puerto Rican',italian:'Italian',world:'World',simple:'Simple'};
+  const cCls = {pr:'b-pr',italian:'b-it',world:'b-wl',simple:'b-sm'};
+  let html = `<div style="padding:14px 16px 0;">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5;">Pick one to swap in. Tomorrow's lunch will update automatically.</div>`;
+  options.forEach((o,i) => {
+    html += `<div class="meal-opt" id="swo-${i}" onclick="selectSwapOption(${i})" style="margin-bottom:10px;">
+      <div class="meal-name">${o.name}</div>
+      <div class="meal-tags">
+        <span class="badge ${cCls[o.cuisine]||'b-sm'}">${cLbl[o.cuisine]||o.cuisine}</span>
+        <span class="badge b-sm">${o.method}</span>
+        <span class="badge b-sm">${o.time}</span>
+      </div>
+      <div class="meal-desc">${o.desc}</div>
+      <div class="meal-tip">Tip: ${o.cookNote}</div>
+      <div style="margin-top:5px;font-size:11px;color:var(--text3);">Tomorrow's lunch: ${o.tomorrowLunch}</div>
+    </div>`;
+  });
+  html += `<button class="btn-s" onclick="document.getElementById('swap-body').innerHTML=renderSwapStep1()" style="margin-bottom:16px;">← Back</button></div>`;
+  document.getElementById('swap-body').innerHTML = html;
+  // Store options for selection
+  window._swapOptions = options;
+}
+
+function selectSwapOption(idx) {
+  const opt = window._swapOptions[idx];
+  if (!opt) return;
+
+  // No plan at all — just open the recipe
+  if (!S.weekPlan) {
+    closeSwapModal();
+    openRecipe(opt.name);
+    return;
+  }
+
+  // Update or add the day's dinner
+  const day = S.weekPlan.days.find(d => d.day === swapDay);
+  if (day) {
+    day.dinner = {
+      name: opt.name,
+      note: opt.desc,
+      time: opt.time,
+      forHer: day.dinner?.forHer || false,
+      leftoverNote: opt.tomorrowLunch,
+    };
+  } else {
+    S.weekPlan.days.push({ day: swapDay, dinner: { name: opt.name, note: opt.desc, time: opt.time, forHer: false }, lunch: { name: 'Leftovers', note: opt.tomorrowLunch, source: 'leftover' }, workout: '', workoutType: '', isOut: false });
+  }
+
+  // Update NEXT day's lunch to reflect the swap
+  const dayOrder = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const nextDayName = dayOrder[(dayOrder.indexOf(swapDay) + 1) % 7];
+  const nextDay = S.weekPlan.days.find(d => d.day === nextDayName);
+  if (nextDay && nextDay.lunch?.source === 'leftover') {
+    nextDay.lunch = {
+      name: `${opt.name} leftovers`,
+      note: opt.tomorrowLunch,
+      source: 'leftover',
+    };
+  }
+
+  save();
+  closeSwapModal();
+  renderToday();
+
+  // Re-render week plan if it's visible
+  if (S.weekPlan) {
+    const ps3 = document.getElementById('ps3-content');
+    if (ps3 && ps3.innerHTML.length > 100) {
+      renderWeekPlan(S.weekPlan.outNights || [], S.weekPlan.herNights || []);
+    }
+  }
+
+  // Show confirmation
+  setTimeout(() => {
+    const saved = document.createElement('div');
+    saved.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#002D72;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:400;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+    saved.textContent = `Swapped to ${opt.name} ✓`;
+    document.body.appendChild(saved);
+    setTimeout(() => saved.remove(), 2500);
+  }, 100);
+}
+
+// ═══════ BACKUP / RESTORE ════════════════════════
+function exportData() {
+  try {
+    const exportObj = {
+      version: 'myplan_v3',
+      exportedAt: new Date().toISOString(),
+      data: S
+    };
+    const json = JSON.stringify(exportObj, null, 2);
+    const blob = new Blob([json], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'myplan-backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showBackupStatus('Exported successfully ✓', 'var(--green)');
+    // Update last backup time display
+    const el = document.getElementById('last-backup-time');
+    if (el) el.textContent = 'just now';
+  } catch(e) {
+    showBackupStatus('Export failed — try again', 'var(--coral)');
+  }
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      // Handle both direct state and wrapped export format
+      const imported = parsed.data || parsed;
+      // Merge carefully — preserve structure
+      S = {...S, ...imported};
+      // Ensure inv always has data
+      if (!S.inv || S.inv.length === 0) S.inv = JSON.parse(JSON.stringify(DEFAULT_INV));
+      save();
+      // Re-render everything
+      renderToday();
+      renderWorkout();
+      renderInv();
+      renderLog();
+      renderWeight();
+      showBackupStatus('Import successful ✓ — all data restored', 'var(--green)');
+      // Clear the file input so same file can be re-imported if needed
+      event.target.value = '';
+    } catch(err) {
+      showBackupStatus('Import failed — file may be corrupted', 'var(--coral)');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showBackupStatus(msg, color) {
+  const el = document.getElementById('backup-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.background = color === 'var(--green)' ? 'rgba(26,138,74,0.1)' : 'rgba(224,48,0,0.1)';
+  el.style.color = color;
+  el.style.border = `1px solid ${color}`;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3500);
+}
+
+function updateLastBackupTime() {
+  const el = document.getElementById('last-backup-time');
+  if (!el) return;
+  try {
+    const backup = localStorage.getItem('myplan_v3_backup');
+    if (backup) {
+      const parsed = JSON.parse(backup);
+      const d = new Date(parsed.savedAt);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      el.textContent = `${months[d.getMonth()]} ${d.getDate()} at ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+  } catch(e) {}
+}
+
+// ═══════ INIT ════════════════════════════════════
+function init() {
+  load();
+  initDates();
+  renderToday();
+  renderWorkout();
+  renderInv();
+  renderLog();
+  renderWeight();
+  if (S.weekPlan) {
+    document.getElementById('pn3').disabled = false;
+    document.getElementById('pn3').classList.add('done');
+  }
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) {
+      splash.style.opacity = '0';
+      setTimeout(() => {
+        splash.remove();
+        // Auto-open habits after splash if needed
+        if (shouldShowHabits()) openHabits();
+      }, 400);
+    }
+  }, 700);
+}
+
+init();
+</script>
+</body>
+</html>
